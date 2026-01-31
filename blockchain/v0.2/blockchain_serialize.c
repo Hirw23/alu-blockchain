@@ -2,22 +2,24 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+
 int block_serialize(llist_node_t node_ptr, int idx, void *arg);
 
 /**
- *  blockchain_serialize - serializes a blockchain into a file
- *
- * @blockchain: pointer to the Blockchain structure to be serialized
- * @path: path to a file
- *
- * Return: 0 if successful, -1 if failed
- */
+*  blockchain_serialize - serializes a blockchain into a file
+*
+* @blockchain: pointer to the Blockchain structure to be serialized
+* @path: path to a file
+*
+* Return: 0 if successful, -1 if failed
+*/
 int blockchain_serialize(blockchain_t const *blockchain,
 
-			 char const *path)
+char const *path)
 {
 	FILE *file;
 	hblk_file_t file_header;
+
 
 	if (!blockchain || !path)
 		return (-1);
@@ -43,13 +45,14 @@ int blockchain_serialize(blockchain_t const *blockchain,
 	return (0);
 }
 
+
 /**
- * block_serialize - serializes a block into a file
- * @node_ptr: pointer to the node to serialize
- * @idx: index of the node
- * @arg: file descriptor
- * Return: 0 if successful, -1 if failed
- */
+* block_serialize - serializes a block into a file
+* @node_ptr: pointer to the node to serialize
+* @idx: index of the node
+* @arg: file descriptor
+* Return: 0 if successful, -1 if failed
+*/
 int block_serialize(llist_node_t node_ptr, int idx, void *arg)
 {
 	block_t *block = (block_t *)node_ptr;

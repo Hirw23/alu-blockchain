@@ -2,6 +2,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+
+
 #define CLEAN_UP (free(chain), close(fd))
 #define CLEAN_UP_BLOCKS (free(block), llist_destroy(list, 1, NULL))
 #define CHECK_ENDIAN(x) (endianness ? SWAPENDIAN(x) : (void)0)
@@ -27,11 +29,11 @@ blockchain_t *blockchain_deserialize(char const *path)
 	if (fd == -1)
 		return (NULL);
 	if (read(fd, buf, strlen(HBLK_MAGIC)) != strlen(HBLK_MAGIC) ||
-	    strcmp(buf, HBLK_MAGIC))
+		strcmp(buf, HBLK_MAGIC))
 		return (CLEAN_UP, NULL);
 	buf[strlen(HBLK_VERSION)] = 0;
 	if (read(fd, buf, strlen(HBLK_VERSION)) != strlen(HBLK_VERSION) ||
-	    strcmp(buf, HBLK_VERSION))
+		strcmp(buf, HBLK_VERSION))
 		return (CLEAN_UP, NULL);
 	chain = calloc(1, sizeof(*chain));
 	if (!chain)
@@ -80,7 +82,7 @@ llist_t *deserialize_blocks(int fd, uint32_t size, uint8_t endianness)
 		if (read(fd, block->data.buffer, block->data.len) != block->data.len)
 			return (CLEAN_UP_BLOCKS, NULL);
 		if (read(fd, block->hash, SHA256_DIGEST_LENGTH) !=
-		    SHA256_DIGEST_LENGTH)
+			SHA256_DIGEST_LENGTH)
 			return (CLEAN_UP_BLOCKS, NULL);
 		if (llist_add_node(list, block, ADD_NODE_REAR))
 			return (CLEAN_UP_BLOCKS, NULL);
