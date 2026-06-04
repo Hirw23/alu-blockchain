@@ -16,35 +16,65 @@ const permissionsData = [
   { name: 'users:delete', description: 'Delete user profiles' },
   { name: 'business:create', description: 'Create business listings' },
   { name: 'business:update', description: 'Update business profiles' },
-  { name: 'products:create', description: 'Register new products' },
-  { name: 'products:update', description: 'Update product items' },
-  { name: 'products:view', description: 'View product details' },
+  { name: 'business:view', description: 'View business profiles' },
+  { name: 'business:delete', description: 'Delete business listings' },
+  { name: 'business:verify', description: 'Verify business credentials' },
+  { name: 'business:manage-members', description: 'Assign or remove business members' },
+  { name: 'cooperative:create', description: 'Create cooperative entities' },
+  { name: 'cooperative:update', description: 'Update cooperative details' },
+  { name: 'cooperative:view', description: 'View cooperative listings' },
+  { name: 'cooperative:manage', description: 'Manage cooperative business memberships' },
+  { name: 'product:create', description: 'Register products' },
+  { name: 'product:view', description: 'View product catalog details' },
+  { name: 'product:update', description: 'Modify product properties' },
+  { name: 'product:delete', description: 'Delete product listings' },
+  { name: 'product:archive', description: 'Deactivate lifecycle status' },
+  { name: 'product:manage-images', description: 'Add or remove product visuals' },
+  { name: 'product:manage-documents', description: 'Manage compliance cert labels' },
+  { name: 'product:manage-categories', description: 'Configure product category hierarchies' },
+  { name: 'product:view-statistics', description: 'Access detail statistics' },
   { name: 'reports:view', description: 'View audit reports' },
   { name: 'analytics:view', description: 'Access dashboard analytics data' },
   { name: 'admin:access', description: 'Access platform administrator settings' },
+  { name: 'supply-chain:create', description: 'Log trace events' },
+  { name: 'supply-chain:update', description: 'Edit pending events' },
+  { name: 'supply-chain:view', description: 'View event timelines' },
+  { name: 'supply-chain:lock', description: 'Freeze event sequence' },
+  { name: 'supply-chain:audit', description: 'Audit timeline events' },
+  { name: 'supply-chain:comment', description: 'Post timeline comments' },
+  { name: 'supply-chain:attachments', description: 'Upload timeline attachments' },
 ];
 
 const rolePermissionsMap = {
   PlatformAdmin: [
     'users:create', 'users:update', 'users:delete',
-    'business:create', 'business:update',
-    'products:create', 'products:update', 'products:view',
-    'reports:view', 'analytics:view', 'admin:access'
+    'business:create', 'business:update', 'business:view', 'business:delete', 'business:verify', 'business:manage-members',
+    'cooperative:create', 'cooperative:update', 'cooperative:view', 'cooperative:manage',
+    'product:create', 'product:view', 'product:update', 'product:delete', 'product:archive', 'product:manage-images', 'product:manage-documents', 'product:manage-categories', 'product:view-statistics',
+    'reports:view', 'analytics:view', 'admin:access',
+    'supply-chain:create', 'supply-chain:update', 'supply-chain:view', 'supply-chain:lock', 'supply-chain:audit', 'supply-chain:comment', 'supply-chain:attachments'
   ],
   CooperativeAdmin: [
-    'users:update', 'business:update',
-    'products:view', 'reports:view', 'analytics:view'
+    'users:update', 'business:view',
+    'cooperative:view', 'cooperative:manage',
+    'product:view', 'product:update', 'reports:view', 'analytics:view',
+    'supply-chain:view', 'supply-chain:comment', 'supply-chain:attachments'
   ],
   Entrepreneur: [
-    'business:create', 'business:update',
-    'products:create', 'products:update', 'products:view',
-    'reports:view', 'analytics:view'
+    'business:create', 'business:update', 'business:view', 'business:delete', 'business:manage-members',
+    'product:create', 'product:view', 'product:update', 'product:delete', 'product:archive', 'product:manage-images', 'product:manage-documents', 'product:manage-categories', 'product:view-statistics',
+    'reports:view', 'analytics:view',
+    'supply-chain:create', 'supply-chain:update', 'supply-chain:view', 'supply-chain:comment', 'supply-chain:attachments'
   ],
   Buyer: [
-    'products:view'
+    'business:view',
+    'product:view',
+    'supply-chain:view'
   ],
   FinancialInstitution: [
-    'products:view', 'reports:view', 'analytics:view'
+    'business:view',
+    'product:view', 'reports:view', 'analytics:view',
+    'supply-chain:view'
   ]
 };
 
@@ -90,6 +120,36 @@ async function main() {
         create: { roleId, permissionId }
       });
     }
+  }
+
+  // Seed Supply Chain Event Types
+  console.log('Seeding supply chain event types...');
+  const eventTypes = [
+    { name: 'Harvested', category: 'Production', description: 'Raw materials harvested' },
+    { name: 'Manufactured', category: 'Production', description: 'Product assembly/processing complete' },
+    { name: 'Processed', category: 'Production', description: 'Post-harvest processing completed' },
+    { name: 'Packaged', category: 'Production', description: 'Product containerized and labelled' },
+    { name: 'Inspected', category: 'Quality', description: 'Product quality inspection check performed' },
+    { name: 'Certified', category: 'Quality', description: 'Regulatory/organic certification issued' },
+    { name: 'Tested', category: 'Quality', description: 'Lab testing validation results recorded' },
+    { name: 'Stored', category: 'Storage', description: 'Stock stored in standard holding area' },
+    { name: 'Warehouse Arrival', category: 'Storage', description: 'Shipment received at storage facility' },
+    { name: 'Warehouse Departure', category: 'Storage', description: 'Shipment dispatched from storage facility' },
+    { name: 'Dispatched', category: 'Transportation', description: 'Consignment handed over to shipping provider' },
+    { name: 'Transported', category: 'Transportation', description: 'Consignment in-transit log updated' },
+    { name: 'Delivered', category: 'Transportation', description: 'Shipment arrived at destination' },
+    { name: 'Retail Arrival', category: 'Retail', description: 'Goods received on retail shelves' },
+    { name: 'Purchased', category: 'Retail', description: 'Consumer checkout purchase registration' },
+    { name: 'Returned', category: 'Retail', description: 'Product returned by consumer' },
+    { name: 'Custom', category: 'Other', description: 'Ad-hoc trace tracking event log' }
+  ];
+
+  for (const type of eventTypes) {
+    await prisma.supplyChainEventType.upsert({
+      where: { name: type.name },
+      update: { category: type.category, description: type.description },
+      create: type
+    });
   }
 
   console.log('✅ Seeding completed successfully!');

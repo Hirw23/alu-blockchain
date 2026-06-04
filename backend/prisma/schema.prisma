@@ -22,6 +22,14 @@ model User {
   refreshTokens           RefreshToken[]
   passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  ownedBusinesses         Business[]               @relation("UserOwnedBusinesses")
+  uploadedDocuments       BusinessDocument[]
+  memberships             BusinessMember[]
+  createdProducts         Product[]                @relation("UserCreatedProducts")
+  uploadedProductImages   ProductImage[]
+  uploadedProductDocuments ProductDocument[]
+  performedEvents         SupplyChainEvent[]       @relation("EventPerformer")
+  supplyChainComments     SupplyChainComment[]
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
 }
@@ -76,5 +84,237 @@ model EmailVerificationToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String   @unique
   expiresAt DateTime
-  verified  Boolean  @default(false)
+}
+
+model Business {
+  id                      String             @id @default(uuid())
+  ownerId                 String
+  owner                   User               @relation("UserOwnedBusinesses", fields: [ownerId], references: [id])
+  cooperativeId           String?
+  cooperative             Cooperative?       @relation(fields: [cooperativeId], references: [id], onDelete: SetNull)
+  businessName            String
+  tradingName             String
+  description             String?
+  businessType            String
+  industry                String
+  registrationNumber      String             @unique
+  taxIdentificationNumber String             @unique
+  email                   String
+  phoneNumber             String
+  website                 String?
+  logoUrl                 String?
+  status                  String             @default("DRAFT") // DRAFT, SUBMITTED, PENDING_VERIFICATION, VERIFIED, ACTIVE, SUSPENDED, ARCHIVED
+  verificationStatus      String             @default("PENDING")
+  establishedDate         DateTime?
+  address                 BusinessAddress?
+  documents               BusinessDocument[]
+  members                 BusinessMember[]
+  products                Product[]
+  productCategories       ProductCategory[]
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+}
+
+model BusinessAddress {
+  id         String   @id @default(uuid())
+  businessId String   @unique
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  country    String
+  province   String
+  district   String
+  sector     String
+  cell       String
+  village    String
+  postalCode String?
+  latitude   Float?
+  longitude  Float?
+}
+
+model BusinessDocument {
+  id                 String   @id @default(uuid())
+  businessId         String
+  business           Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  documentType       String   // Registration Certificate, Tax Certificate, Business Permit, National ID, Other
+  fileName           String
+  fileUrl            String
+  uploadedBy         String
+  uploader           User     @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  verificationStatus String   @default("PENDING")
+  uploadedAt         DateTime @default(now())
+}
+
+model Cooperative {
+  id                 String     @id @default(uuid())
+  cooperativeName    String     @unique
+  description        String?
+  registrationNumber String     @unique
+  email              String
+  phoneNumber        String
+  status             String     @default("ACTIVE")
+  businesses         Business[]
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+}
+
+model BusinessMember {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       String   // Owner, Manager, Employee
+  joinedAt   DateTime @default(now())
+
+  @@unique([businessId, userId])
+}
+
+model ProductCategory {
+  id                String            @id @default(uuid())
+  businessId        String?
+  business          Business?         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  categoryName      String
+  description       String?
+  parentCategoryId  String?
+  parentCategory    ProductCategory?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id], onDelete: Cascade)
+  subCategories     ProductCategory[] @relation("CategoryHierarchy")
+  products          Product[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+
+model Product {
+  id                  String            @id @default(uuid())
+  businessId          String
+  business            Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  categoryId          String
+  category            ProductCategory   @relation(fields: [categoryId], references: [id])
+  createdBy           String
+  creator             User              @relation("UserCreatedProducts", fields: [createdBy], references: [id])
+  productName         String
+  productCode         String            @unique
+  sku                 String            @unique
+  barcode             String            @unique
+  description         String?
+  productType         String
+  batchNumber         String?
+  countryOfOrigin     String
+  productionFacility  String?
+  manufacturingDate   DateTime?
+  expiryDate          DateTime?
+  quantity            Float             @default(0)
+  unitOfMeasure       String
+  storageRequirements String?
+  status              String            @default("DRAFT") // DRAFT, REGISTERED, VERIFIED, ACTIVE, OUT_OF_STOCK, DISCONTINUED, ARCHIVED
+  verificationStatus  String            @default("PENDING")
+  variants            ProductVariant[]
+  images              ProductImage[]
+  documents           ProductDocument[]
+  supplyChainEvents   SupplyChainEvent[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+}
+
+model ProductVariant {
+  id            String   @id @default(uuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantName   String
+  sku           String   @unique
+  barcode       String   @unique
+  quantity      Float    @default(0)
+  unitOfMeasure String
+  createdAt     DateTime @default(now())
+}
+
+model ProductImage {
+  id           String   @id @default(uuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  fileName     String
+  fileUrl      String
+  displayOrder Int      @default(0)
+  uploadedBy   String
+  uploader     User     @relation(fields: [uploadedBy], references: [id])
+  uploadedAt   DateTime @default(now())
+}
+
+model ProductDocument {
+  id           String   @id @default(uuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  documentType String
+  fileName     String
+  fileUrl      String
+  uploadedBy   String
+  uploader     User     @relation(fields: [uploadedBy], references: [id])
+  uploadedAt   DateTime @default(now())
+}
+
+model SupplyChainEventType {
+  id                   String             @id @default(uuid())
+  name                 String             @unique
+  category             String             // Production, Quality, Storage, Transportation, Retail, Other
+  description          String?
+  allowedPreviousTypes Json?              // Store array of event type names as a JSON array
+  events               SupplyChainEvent[]
+  createdAt            DateTime           @default(now())
+}
+
+model SupplyChainEvent {
+  id              String                  @id @default(uuid())
+  productId       String
+  product         Product                 @relation(fields: [productId], references: [id], onDelete: Cascade)
+  businessId      String
+  performedBy     String
+  performer       User                    @relation("EventPerformer", fields: [performedBy], references: [id])
+  eventTypeId     String
+  eventType       SupplyChainEventType    @relation(fields: [eventTypeId], references: [id])
+  eventStatus     String                  @default("DRAFT") // DRAFT, SUBMITTED, CONFIRMED, LOCKED
+  title           String
+  description     String?
+  sequenceNumber  Int
+  occurredAt      DateTime                @default(now())
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  location        SupplyChainLocation?
+  attachments     SupplyChainAttachment[]
+  comments        SupplyChainComment[]
+
+  @@unique([productId, sequenceNumber])
+}
+
+model SupplyChainLocation {
+  id        String           @id @default(uuid())
+  eventId   String           @unique
+  event     SupplyChainEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  country   String
+  province  String
+  district  String
+  sector    String
+  cell      String
+  village   String
+  address   String?
+  latitude  Float?
+  longitude Float?
+}
+
+model SupplyChainAttachment {
+  id           String           @id @default(uuid())
+  eventId      String
+  event        SupplyChainEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  fileName     String
+  fileUrl      String
+  documentType String           // Image, PDF, Certificate, Delivery Note, Receipt, Inspection Report, Other
+  uploadedBy   String
+  uploadedAt   DateTime         @default(now())
+}
+
+model SupplyChainComment {
+  id        String           @id @default(uuid())
+  eventId   String
+  event     SupplyChainEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   String
+  createdAt DateTime         @default(now())
 }
