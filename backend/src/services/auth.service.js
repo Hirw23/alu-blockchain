@@ -1,11 +1,7 @@
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import authRepository from '../repositories/auth.repository.js';
-import {
-  signAccessToken,
-  signRefreshToken,
-  verifyRefreshToken,
-} from '../utils/jwt.utils.js';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.utils.js';
 import {
   BadRequestError,
   UnauthorizedError,
@@ -150,7 +146,9 @@ export const authService = {
       if (savedToken && savedToken.revoked) {
         // Reuse detected! Invalidate all refresh tokens for that user
         await authRepository.revokeUserRefreshTokens(savedToken.userId);
-        console.warn(`[Security Alert] Refresh token reuse detected for User ${savedToken.userId}. Revoked all tokens.`);
+        console.warn(
+          `[Security Alert] Refresh token reuse detected for User ${savedToken.userId}. Revoked all tokens.`
+        );
       }
       throw new UnauthorizedError('Invalid, expired or revoked refresh token');
     }

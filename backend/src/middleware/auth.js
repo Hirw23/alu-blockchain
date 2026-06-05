@@ -74,7 +74,9 @@ export const authorize = (...allowedRoles) => {
     }
 
     if (allowedRoles.length && !allowedRoles.includes(req.user.role)) {
-      return next(new ForbiddenError(`User role '${req.user.role}' is not authorized to access this resource`));
+      return next(
+        new ForbiddenError(`User role '${req.user.role}' is not authorized to access this resource`)
+      );
     }
 
     next();
@@ -97,7 +99,11 @@ export const checkPermission = (requiredPermission) => {
     }
 
     if (!req.user.permissions.includes(requiredPermission)) {
-      return next(new ForbiddenError(`You do not have the required permission '${requiredPermission}' to perform this action`));
+      return next(
+        new ForbiddenError(
+          `You do not have the required permission '${requiredPermission}' to perform this action`
+        )
+      );
     }
 
     next();
