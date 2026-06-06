@@ -25,7 +25,12 @@ router.post('/reset-password', validateResetPassword, authController.resetPasswo
 
 // Protected auth endpoints
 router.get('/me', authenticate, authController.me);
-router.post('/change-password', authenticate, validateChangePassword, authController.changePassword);
+router.post(
+  '/change-password',
+  authenticate,
+  validateChangePassword,
+  authController.changePassword
+);
 router.patch('/profile', authenticate, validateUpdateProfile, authController.updateProfile);
 
 export default router;

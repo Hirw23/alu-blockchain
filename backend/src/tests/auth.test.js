@@ -46,9 +46,7 @@ describe('Authentication API Endpoints', () => {
 
   describe('POST /api/v1/auth/register', () => {
     it('should validate registration request body and return 400 on error', async () => {
-      const res = await request(app)
-        .post('/api/v1/auth/register')
-        .send({ email: 'invalid-email' });
+      const res = await request(app).post('/api/v1/auth/register').send({ email: 'invalid-email' });
 
       expect(res.statusCode).toBe(422);
       expect(res.body.success).toBe(false);
@@ -69,14 +67,12 @@ describe('Authentication API Endpoints', () => {
         token: 'verify-token-123',
       });
 
-      const res = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          email: 'alice@example.com',
-          password: 'securePassword123',
-          firstName: 'Alice',
-          lastName: 'Smith',
-        });
+      const res = await request(app).post('/api/v1/auth/register').send({
+        email: 'alice@example.com',
+        password: 'securePassword123',
+        firstName: 'Alice',
+        lastName: 'Smith',
+      });
 
       expect(res.statusCode).toBe(201);
       expect(res.body.success).toBe(true);
@@ -86,14 +82,12 @@ describe('Authentication API Endpoints', () => {
     it('should return 409 Conflict if email is already registered', async () => {
       prismaMock.user.findUnique.mockResolvedValue({ id: 'usr-1', email: 'alice@example.com' });
 
-      const res = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          email: 'alice@example.com',
-          password: 'securePassword123',
-          firstName: 'Alice',
-          lastName: 'Smith',
-        });
+      const res = await request(app).post('/api/v1/auth/register').send({
+        email: 'alice@example.com',
+        password: 'securePassword123',
+        firstName: 'Alice',
+        lastName: 'Smith',
+      });
 
       expect(res.statusCode).toBe(409);
       expect(res.body.success).toBe(false);
@@ -104,12 +98,10 @@ describe('Authentication API Endpoints', () => {
     it('should fail to login with non-existent email', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 
-      const res = await request(app)
-        .post('/api/v1/auth/login')
-        .send({
-          email: 'notfound@example.com',
-          password: 'anyPassword',
-        });
+      const res = await request(app).post('/api/v1/auth/login').send({
+        email: 'notfound@example.com',
+        password: 'anyPassword',
+      });
 
       expect(res.statusCode).toBe(401);
       expect(res.body.success).toBe(false);

@@ -77,13 +77,10 @@ export const changePasswordSchema = Joi.object({
     'any.required': 'Current password is required',
   }),
   newPassword: passwordValidation,
-  newPasswordConfirmation: Joi.any()
-    .equal(Joi.ref('newPassword'))
-    .required()
-    .messages({
-      'any.only': 'New password confirmation does not match new password',
-      'any.required': 'New password confirmation is required',
-    }),
+  newPasswordConfirmation: Joi.any().equal(Joi.ref('newPassword')).required().messages({
+    'any.only': 'New password confirmation does not match new password',
+    'any.required': 'New password confirmation is required',
+  }),
 });
 
 /**
