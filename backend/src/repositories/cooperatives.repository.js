@@ -1,39 +1,96 @@
-/**
- * Repository layer handling database/mock storage operations for Cooperatives.
- */
+import prisma from '../database/client.js';
+
 export const cooperativesRepository = {
   /**
-   * Retrieves all records of Cooperatives.
+   * Registers a new cooperative entity profile.
    */
-  async findAll() {
-    return [
-      { id: '1', name: 'Mock Cooperatives 1', createdAt: new Date().toISOString() },
-      { id: '2', name: 'Mock Cooperatives 2', createdAt: new Date().toISOString() },
-    ];
+  async createCooperative(data) {
+    return prisma.cooperative.create({ data });
   },
 
   /**
-   * Retrieves a single record of Cooperatives by its unique ID.
-   * @param {string} id - Record ID
+   * Retrieves cooperative details by ID.
    */
   async findById(id) {
-    return {
-      id,
-      name: `Mock ${id} - Cooperatives`,
-      createdAt: new Date().toISOString(),
-    };
+    return prisma.cooperative.findUnique({
+      where: { id },
+    });
   },
 
   /**
-   * Persists a new Cooperatives record.
-   * @param {Object} data - Input fields
+   * Finds cooperative profile by registration number.
    */
-  async create(data) {
-    return {
-      id: `mock_${Math.random().toString(36).substr(2, 9)}`,
-      ...data,
-      createdAt: new Date().toISOString(),
-    };
+  async findByRegNumber(registrationNumber) {
+    return prisma.cooperative.findUnique({
+      where: { registrationNumber },
+    });
+  },
+
+  /**
+   * Finds cooperative profile by name.
+   */
+  async findByName(cooperativeName) {
+    return prisma.cooperative.findUnique({
+      where: { cooperativeName },
+    });
+  },
+
+  /**
+   * Modifies an existing cooperative profile.
+   */
+  async updateCooperative(id, data) {
+    return prisma.cooperative.update({
+      where: { id },
+      data,
+    });
+  },
+
+  /**
+   * Deletes a cooperative entity listing.
+   */
+  async deleteCooperative(id) {
+    return prisma.cooperative.delete({
+      where: { id },
+    });
+  },
+
+  /**
+   * Retrieves all cooperatives.
+   */
+  async findAll() {
+    return prisma.cooperative.findMany();
+  },
+
+  /**
+   * Lists all businesses linked to a cooperative.
+   */
+  async findBusinesses(cooperativeId) {
+    return prisma.business.findMany({
+      where: { cooperativeId },
+      include: { address: true },
+    });
+  },
+
+  /**
+   * Binds a business listing as a cooperative member.
+   */
+  async addBusiness(cooperativeId, businessId) {
+    return prisma.business.update({
+      where: { id: businessId },
+      data: { cooperativeId },
+      include: { cooperative: true },
+    });
+  },
+
+  /**
+   * Unbinds/Removes a business from a cooperative.
+   */
+  async removeBusiness(businessId) {
+    return prisma.business.update({
+      where: { id: businessId },
+      data: { cooperativeId: null },
+      include: { cooperative: true },
+    });
   },
 };
 

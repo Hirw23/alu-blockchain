@@ -1,11 +1,16 @@
 import validate from '../middleware/validator.js';
-import { defaultCooperativesSchema } from '../schemas/cooperatives.schema.js';
+import {
+  createCooperativeSchema,
+  updateCooperativeSchema,
+  bindBusinessSchema,
+} from '../schemas/cooperatives.schema.js';
 
-/**
- * Default validator middleware for Cooperatives requests.
- */
-export const validateDefaultCooperatives = validate(defaultCooperativesSchema, 'body');
+export const validateCreateCooperative = validate(createCooperativeSchema, 'body');
+export const validateUpdateCooperative = validate(updateCooperativeSchema, 'body');
+export const validateBindBusiness = validate(bindBusinessSchema, 'body');
 
 export default {
-  validateDefaultCooperatives,
+  validateCreateCooperative,
+  validateUpdateCooperative,
+  validateBindBusiness,
 };
