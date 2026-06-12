@@ -344,37 +344,718 @@
     "/businesses": {
       "get": {
         "tags": ["Businesses"],
-        "summary": "Retrieve business list",
-        "responses": { "200": { "description": "Successful retrieval" } }
+        "summary": "Search and query businesses list",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Search string matching name or tradingName" },
+          { "name": "registrationNumber", "in": "query", "schema": { "type": "string" } },
+          { "name": "industry", "in": "query", "schema": { "type": "string" } },
+          { "name": "businessType", "in": "query", "schema": { "type": "string" } },
+          { "name": "verificationStatus", "in": "query", "schema": { "type": "string", "enum": ["PENDING", "VERIFIED", "REJECTED"] } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } }
+        ],
+        "responses": {
+          "200": { "description": "List of businesses retrieved successfully" }
+        }
       },
       "post": {
         "tags": ["Businesses"],
-        "summary": "Create business record",
-        "responses": { "210": { "description": "Created successfully" } }
+        "summary": "Register a new business profile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["businessName", "tradingName", "businessType", "industry", "registrationNumber", "taxIdentificationNumber", "email", "phoneNumber"],
+                "properties": {
+                  "businessName": { "type": "string" },
+                  "tradingName": { "type": "string" },
+                  "description": { "type": "string" },
+                  "businessType": { "type": "string" },
+                  "industry": { "type": "string" },
+                  "registrationNumber": { "type": "string" },
+                  "taxIdentificationNumber": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "phoneNumber": { "type": "string" },
+                  "cooperativeId": { "type": "string", "format": "uuid" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Business created successfully" },
+          "409": { "description": "Conflict (Registration Number or Tax ID exists)" }
+        }
+      }
+    },
+    "/businesses/me": {
+      "get": {
+        "tags": ["Businesses"],
+        "summary": "Get businesses owned by or associated with active caller",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/businesses/{id}": {
+      "get": {
+        "tags": ["Businesses"],
+        "summary": "Get full profile details of a specific business",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" },
+          "404": { "description": "Business not found" }
+        }
+      },
+      "patch": {
+        "tags": ["Businesses"],
+        "summary": "Modify business profile information (Owner/Manager only)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "businessName": { "type": "string" },
+                  "tradingName": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Business updated successfully" }
+        }
+      },
+      "delete": {
+        "tags": ["Businesses"],
+        "summary": "Delete a business listing (Primary Owner only)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Business deleted successfully" }
+        }
+      }
+    },
+    "/businesses/{id}/address": {
+      "get": {
+        "tags": ["Businesses"],
+        "summary": "Get physical location address of a business",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "post": {
+        "tags": ["Businesses"],
+        "summary": "Set or update business physical address",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["country", "province", "district", "sector", "cell", "village"],
+                "properties": {
+                  "country": { "type": "string" },
+                  "province": { "type": "string" },
+                  "district": { "type": "string" },
+                  "sector": { "type": "string" },
+                  "cell": { "type": "string" },
+                  "village": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Address updated successfully" }
+        }
+      }
+    },
+    "/businesses/{id}/documents": {
+      "get": {
+        "tags": ["Businesses"],
+        "summary": "Get uploaded documents details list",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "post": {
+        "tags": ["Businesses"],
+        "summary": "Stage uploaded document metadata check",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["documentType", "fileName", "fileUrl"],
+                "properties": {
+                  "documentType": { "type": "string", "enum": ["Registration Certificate", "Tax Certificate", "Business Permit", "National ID", "Other"] },
+                  "fileName": { "type": "string" },
+                  "fileUrl": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "210": { "description": "Created successfully" }
+        }
+      }
+    },
+    "/businesses/{id}/members": {
+      "get": {
+        "tags": ["Businesses"],
+        "summary": "Get member roster of business",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "post": {
+        "tags": ["Businesses"],
+        "summary": "Assign member user to business roster",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId", "role"],
+                "properties": {
+                  "userId": { "type": "string", "format": "uuid" },
+                  "role": { "type": "string", "enum": ["Owner", "Manager", "Employee"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Member assigned" }
+        }
+      }
+    },
+    "/businesses/{id}/verify": {
+      "patch": {
+        "tags": ["Businesses"],
+        "summary": "Approve/Verify business registration documents (PlatformAdmin only)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["verificationStatus"],
+                "properties": {
+                  "verificationStatus": { "type": "string", "enum": ["PENDING", "VERIFIED", "REJECTED"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Verification status updated" }
+        }
+      }
+    },
+    "/businesses/{id}/status": {
+      "patch": {
+        "tags": ["Businesses"],
+        "summary": "Update business lifecycle status state",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": { "type": "string", "enum": ["DRAFT", "SUBMITTED", "PENDING_VERIFICATION", "VERIFIED", "ACTIVE", "SUSPENDED", "ARCHIVED"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Status updated successfully" }
+        }
+      }
+    },
+    "/businesses/{id}/statistics": {
+      "get": {
+        "tags": ["Businesses"],
+        "summary": "Retrieve count statistics for products, events, and members",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
       }
     },
     "/products": {
       "get": {
         "tags": ["Products"],
-        "summary": "Retrieve products list",
-        "responses": { "200": { "description": "Successful retrieval" } }
+        "summary": "Search products catalog list",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "sku", "in": "query", "schema": { "type": "string" } },
+          { "name": "barcode", "in": "query", "schema": { "type": "string" } },
+          { "name": "categoryId", "in": "query", "schema": { "type": "string", "format": "uuid" } },
+          { "name": "businessId", "in": "query", "schema": { "type": "string", "format": "uuid" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } }
+        ],
+        "responses": {
+          "200": { "description": "Successful retrieval" }
+        }
       },
       "post": {
         "tags": ["Products"],
         "summary": "Register a new product",
-        "responses": { "201": { "description": "Created successfully" } }
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["businessId", "categoryId", "productName", "productCode", "sku", "barcode", "productType", "countryOfOrigin", "unitOfMeasure"],
+                "properties": {
+                  "businessId": { "type": "string", "format": "uuid" },
+                  "categoryId": { "type": "string", "format": "uuid" },
+                  "productName": { "type": "string" },
+                  "productCode": { "type": "string" },
+                  "sku": { "type": "string" },
+                  "barcode": { "type": "string" },
+                  "description": { "type": "string" },
+                  "productType": { "type": "string" },
+                  "countryOfOrigin": { "type": "string" },
+                  "quantity": { "type": "number" },
+                  "unitOfMeasure": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created successfully" },
+          "409": { "description": "SKU or barcode conflicts" }
+        }
       }
     },
-    "/supplychain": {
+    "/products/{id}": {
       "get": {
-        "tags": ["SupplyChain"],
-        "summary": "Retrieve supplychain tracking history",
-        "responses": { "200": { "description": "Successful retrieval" } }
+        "tags": ["Products"],
+        "summary": "Get product profile detail",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "patch": {
+        "tags": ["Products"],
+        "summary": "Modify product profile",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "productName": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "delete": {
+        "tags": ["Products"],
+        "summary": "Delete product listing",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/products/{id}/status": {
+      "patch": {
+        "tags": ["Products"],
+        "summary": "Update product lifecycle status state",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": { "type": "string", "enum": ["DRAFT", "REGISTERED", "VERIFIED", "ACTIVE", "OUT_OF_STOCK", "DISCONTINUED", "ARCHIVED"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/products/{id}/inventory": {
+      "patch": {
+        "tags": ["Products"],
+        "summary": "Update product inventory stock counts",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["quantity", "unitOfMeasure"],
+                "properties": {
+                  "quantity": { "type": "number" },
+                  "unitOfMeasure": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/products/{id}/statistics": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get product count metrics",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/products/{id}/history": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get history ledger logs for this product",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/products/{id}/images": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get images list metadata",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
       },
       "post": {
-        "tags": ["SupplyChain"],
-        "summary": "Register a new supplychain event log",
-        "responses": { "201": { "description": "Created successfully" } }
+        "tags": ["Products"],
+        "summary": "Record upload metadata details for image",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fileName", "fileUrl"],
+                "properties": {
+                  "fileName": { "type": "string" },
+                  "fileUrl": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Success" }
+        }
+      }
+    },
+    "/products/{id}/documents": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get document permits list",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "post": {
+        "tags": ["Products"],
+        "summary": "Record upload metadata details for document",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["documentType", "fileName", "fileUrl"],
+                "properties": {
+                  "documentType": { "type": "string", "enum": ["Certificate", "Product Label", "Safety Sheet", "Manufacturing Certificate", "Other"] },
+                  "fileName": { "type": "string" },
+                  "fileUrl": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "210": { "description": "Success" }
+        }
+      }
+    },
+    "/product-categories": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "List categories",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "post": {
+        "tags": ["Products"],
+        "summary": "Register a new category",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["categoryName"],
+                "properties": {
+                  "categoryName": { "type": "string" },
+                  "description": { "type": "string" },
+                  "parentCategoryId": { "type": "string", "format": "uuid" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "210": { "description": "Created successfully" }
+        }
+      }
+    },
+    "/product-categories/tree": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get hierarchy structure tree",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/supply-chain/event-types": {
+      "get": {
+        "tags": ["Supply Chain"],
+        "summary": "Retrieve standard event types catalog",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/supply-chain/events": {
+      "get": {
+        "tags": ["Supply Chain"],
+        "summary": "Search supply chain trace logs",
+        "parameters": [
+          { "name": "productId", "in": "query", "schema": { "type": "string", "format": "uuid" } },
+          { "name": "eventStatus", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "post": {
+        "tags": ["Supply Chain"],
+        "summary": "Record a new supply chain trace event log",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["productId", "eventTypeId", "title"],
+                "properties": {
+                  "productId": { "type": "string", "format": "uuid" },
+                  "eventTypeId": { "type": "string", "format": "uuid" },
+                  "title": { "type": "string" },
+                  "description": { "type": "string" },
+                  "occurredAt": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created successfully" },
+          "400": { "description": "Workflow transition violation" }
+        }
+      }
+    },
+    "/supply-chain/events/{id}": {
+      "get": {
+        "tags": ["Supply Chain"],
+        "summary": "Get event details",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "patch": {
+        "tags": ["Supply Chain"],
+        "summary": "Update event description or title",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "delete": {
+        "tags": ["Supply Chain"],
+        "summary": "Delete trace event record",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/supply-chain/events/{id}/status": {
+      "patch": {
+        "tags": ["Supply Chain"],
+        "summary": "Lock or freeze event record",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/supply-chain/events/{id}/location": {
+      "post": {
+        "tags": ["Supply Chain"],
+        "summary": "Update geographic location details",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/supply-chain/events/{id}/attachments": {
+      "post": {
+        "tags": ["Supply Chain"],
+        "summary": "Add compliance certificate attachment metadata",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "201": { "description": "Success" }
+        }
+      }
+    },
+    "/products/{id}/timeline": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Retrieve chronological history timeline",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/products/{id}/current-stage": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Resolve product current processing stage",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
       }
     },
     "/qr": {
@@ -420,8 +1101,133 @@
     "/cooperatives": {
       "get": {
         "tags": ["Cooperatives"],
-        "summary": "Retrieve cooperative memberships",
-        "responses": { "200": { "description": "Success" } }
+        "summary": "Retrieve all registered cooperatives list",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "post": {
+        "tags": ["Cooperatives"],
+        "summary": "Register a new cooperative profile (PlatformAdmin only)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["cooperativeName", "registrationNumber", "email", "phoneNumber"],
+                "properties": {
+                  "cooperativeName": { "type": "string" },
+                  "description": { "type": "string" },
+                  "registrationNumber": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "phoneNumber": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Cooperative created successfully" },
+          "409": { "description": "Name or Registration Number already exists" }
+        }
+      }
+    },
+    "/cooperatives/{id}": {
+      "get": {
+        "tags": ["Cooperatives"],
+        "summary": "Get cooperative details profile by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" },
+          "404": { "description": "Cooperative not found" }
+        }
+      },
+      "patch": {
+        "tags": ["Cooperatives"],
+        "summary": "Modify cooperative details profile (PlatformAdmin only)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cooperativeName": { "type": "string" },
+                  "description": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "phoneNumber": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Cooperative updated successfully" }
+        }
+      },
+      "delete": {
+        "tags": ["Cooperatives"],
+        "summary": "Delete a cooperative profile",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Cooperative deleted" }
+        }
+      }
+    },
+    "/cooperatives/{id}/businesses": {
+      "get": {
+        "tags": ["Cooperatives"],
+        "summary": "Get list of businesses belonging to a cooperative",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "post": {
+        "tags": ["Cooperatives"],
+        "summary": "Bind a business profile to a cooperative roster",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["businessId"],
+                "properties": {
+                  "businessId": { "type": "string", "format": "uuid" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Business bound successfully" }
+        }
+      }
+    },
+    "/cooperatives/{id}/businesses/{businessId}": {
+      "delete": {
+        "tags": ["Cooperatives"],
+        "summary": "Unbind a business profile from a cooperative",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "businessId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Business unbound successfully" }
+        }
       }
     },
     "/admin": {
