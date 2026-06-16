@@ -1058,23 +1058,82 @@
         }
       }
     },
-    "/qr": {
-      "get": {
-        "tags": ["QR"],
-        "summary": "Retrieve list of QR logs",
-        "responses": { "200": { "description": "Successful retrieval" } }
-      },
+    "/products/{id}/identity": {
       "post": {
-        "tags": ["QR"],
-        "summary": "Register a new QR code",
-        "responses": { "201": { "description": "Created successfully" } }
+        "tags": ["QR Code"],
+        "summary": "Create digital identity for a product",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "201": { "description": "Success" }
+        }
+      },
+      "get": {
+        "tags": ["QR Code"],
+        "summary": "Get identity detail",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "patch": {
+        "tags": ["QR Code"],
+        "summary": "Modify identity fields",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "delete": {
+        "tags": ["QR Code"],
+        "summary": "Remove digital identity",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
       }
     },
-    "/verification": {
+    "/products/{id}/qr": {
+      "post": {
+        "tags": ["QR Code"],
+        "summary": "Generate QR code asset details",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "201": { "description": "Success" }
+        }
+      }
+    },
+    "/products/{id}/verifications": {
       "get": {
-        "tags": ["Verification"],
-        "summary": "Public verify endpoint",
-        "responses": { "200": { "description": "Verified successfully" } }
+        "tags": ["QR Code"],
+        "summary": "Get product verification scan history",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/api/public/verify/{verificationToken}": {
+      "get": {
+        "tags": ["Public Verification"],
+        "summary": "Public verify product authenticity using QR token",
+        "parameters": [
+          { "name": "verificationToken", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Authenticity response details resolved" }
+        }
       }
     },
     "/analytics": {
@@ -1242,6 +1301,119 @@
         "tags": ["Blockchain"],
         "summary": "Audit logs from ledger node",
         "responses": { "200": { "description": "Success" } }
+      }
+    },
+    "/analytics/dashboard": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get dashboard summaries",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/analytics/business/{id}/kpis": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get business KPIs details",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/analytics/products/comparison": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get products comparison analysis side-by-side",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/reports": {
+      "post": {
+        "tags": ["Reports"],
+        "summary": "Create report layout definition settings",
+        "responses": {
+          "201": { "description": "Created successfully" }
+        }
+      },
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Get list of report layout definitions",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/reports/{id}/export": {
+      "post": {
+        "tags": ["Reports"],
+        "summary": "Generate export document file (PDF, Excel, CSV, JSON)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "201": { "description": "Exported successfully" }
+        }
+      }
+    },
+    "/reports/{id}/download": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Download generated report export file",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/admin/settings": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get platform configurations list",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Modify configuration settings value",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/admin/features": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get list of active/inactive feature flags",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/admin/audit": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get list of immutable security audit logs",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Get system health parameters check results",
+        "responses": {
+          "200": { "description": "Success" }
+        }
       }
     }
   }

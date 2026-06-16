@@ -23,6 +23,9 @@ import notificationsRoutes from './routes/notifications.routes.js';
 import cooperativesRoutes from './routes/cooperatives.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import blockchainRoutes from './routes/blockchain.routes.js';
+import healthRoutes from './routes/health.routes.js';
+import announcementsRoutes from './routes/announcements.routes.js';
+import checkMaintenanceMode from './middleware/maintenance.js';
 
 const app = express();
 
@@ -43,20 +46,14 @@ registerSwagger(app);
 // Base routing prefix definition helper
 const apiPrefix = `/api/${appConfig.apiVersion}`;
 
-/**
- * Health Check Endpoint
- */
-app.get(`${apiPrefix}/health`, (req, res) => {
-  res.status(200).json({
-    success: true,
-    status: 'healthy',
-    version: appConfig.apiVersion,
-    timestamp: new Date().toISOString(),
-    uptime: `${process.uptime().toFixed(1)}s`,
-  });
-});
+// Mount health routes first so monitoring works even during maintenance lockout
+app.use(`${apiPrefix}/health`, healthRoutes);
+
+// Apply maintenance mode filter for all other operational endpoints
+app.use(checkMaintenanceMode);
 
 // Register feature module endpoints
+app.use(`${apiPrefix}/announcements`, announcementsRoutes);
 app.use(`${apiPrefix}/auth`, authRoutes);
 app.use(`${apiPrefix}/users`, usersRoutes);
 app.use(`${apiPrefix}/businesses`, businessesRoutes);
@@ -70,7 +67,7 @@ app.use(`${apiPrefix}/analytics`, analyticsRoutes);
 app.use(`${apiPrefix}/notifications`, notificationsRoutes);
 app.use(`${apiPrefix}/cooperatives`, cooperativesRoutes);
 app.use(`${apiPrefix}/blockchain`, blockchainRoutes);
-app.use(`${apiPrefix}/qr`, qrRoutes);
+app.use('/', qrRoutes);
 
 // Fallback handlers
 app.use(notFound);
