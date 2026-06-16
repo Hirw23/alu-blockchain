@@ -43,6 +43,36 @@ const permissionsData = [
   { name: 'supply-chain:audit', description: 'Audit timeline events' },
   { name: 'supply-chain:comment', description: 'Post timeline comments' },
   { name: 'supply-chain:attachments', description: 'Upload timeline attachments' },
+  { name: 'product-identity:create', description: 'Create digital identities' },
+  { name: 'product-identity:view', description: 'View identity details' },
+  { name: 'product-identity:update', description: 'Modify identity metadata' },
+  { name: 'product-identity:delete', description: 'Remove digital identity' },
+  { name: 'qr:generate', description: 'Generate QR codes' },
+  { name: 'qr:download', description: 'Download QR sheets' },
+  { name: 'qr:regenerate', description: 'Regenerate QR token versions' },
+  { name: 'verification:view', description: 'View verification scans log' },
+  { name: 'verification:statistics', description: 'Access scan analytics metrics' },
+  { name: 'analytics:view', description: 'Access general analytics view' },
+  { name: 'analytics:dashboard', description: 'View business dashboards' },
+  { name: 'analytics:reports', description: 'View dashboard reports' },
+  { name: 'analytics:exports', description: 'Export report documents' },
+  { name: 'analytics:kpis', description: 'Access KPI metrics calculations' },
+  { name: 'analytics:comparisons', description: 'Access comparison trends' },
+  { name: 'reports:create', description: 'Register report definitions' },
+  { name: 'reports:download', description: 'Download generated export sheets' },
+  { name: 'reports:manage', description: 'Delete or edit report configs' },
+  { name: 'admin:view', description: 'Access system admin reports' },
+  { name: 'admin:manage', description: 'Govern platform features and user blocks' },
+  { name: 'audit:view', description: 'Access security audit log history' },
+  { name: 'notifications:manage', description: 'Send platform notifications' },
+  { name: 'announcements:manage', description: 'Publish announcements feed' },
+  { name: 'settings:update', description: 'Modify application settings values' },
+  { name: 'features:update', description: 'Toggle feature flags' },
+  { name: 'maintenance:manage', description: 'Toggle maintenance lock status' },
+  { name: 'roles:manage', description: 'Govern RBAC roles mapping' },
+  { name: 'permissions:manage', description: 'Govern permissions registry' },
+  { name: 'users:manage', description: 'Deactivate or reset user accounts' },
+  { name: 'health:view', description: 'Access system health status details' },
 ];
 
 const rolePermissionsMap = {
@@ -52,19 +82,28 @@ const rolePermissionsMap = {
     'cooperative:create', 'cooperative:update', 'cooperative:view', 'cooperative:manage',
     'product:create', 'product:view', 'product:update', 'product:delete', 'product:archive', 'product:manage-images', 'product:manage-documents', 'product:manage-categories', 'product:view-statistics',
     'reports:view', 'analytics:view', 'admin:access',
-    'supply-chain:create', 'supply-chain:update', 'supply-chain:view', 'supply-chain:lock', 'supply-chain:audit', 'supply-chain:comment', 'supply-chain:attachments'
+    'supply-chain:create', 'supply-chain:update', 'supply-chain:view', 'supply-chain:lock', 'supply-chain:audit', 'supply-chain:comment', 'supply-chain:attachments',
+    'product-identity:create', 'product-identity:view', 'product-identity:update', 'product-identity:delete', 'qr:generate', 'qr:download', 'qr:regenerate', 'verification:view', 'verification:statistics',
+    'analytics:dashboard', 'analytics:reports', 'analytics:exports', 'analytics:kpis', 'analytics:comparisons', 'reports:create', 'reports:download', 'reports:manage',
+    'admin:view', 'admin:manage', 'audit:view', 'notifications:manage', 'announcements:manage', 'settings:update', 'features:update', 'maintenance:manage', 'roles:manage', 'permissions:manage', 'users:manage', 'health:view'
   ],
   CooperativeAdmin: [
     'users:update', 'business:view',
     'cooperative:view', 'cooperative:manage',
     'product:view', 'product:update', 'reports:view', 'analytics:view',
-    'supply-chain:view', 'supply-chain:comment', 'supply-chain:attachments'
+    'supply-chain:view', 'supply-chain:comment', 'supply-chain:attachments',
+    'product-identity:view', 'verification:view', 'verification:statistics',
+    'analytics:dashboard', 'analytics:reports', 'analytics:kpis', 'reports:create',
+    'health:view'
   ],
   Entrepreneur: [
     'business:create', 'business:update', 'business:view', 'business:delete', 'business:manage-members',
     'product:create', 'product:view', 'product:update', 'product:delete', 'product:archive', 'product:manage-images', 'product:manage-documents', 'product:manage-categories', 'product:view-statistics',
     'reports:view', 'analytics:view',
-    'supply-chain:create', 'supply-chain:update', 'supply-chain:view', 'supply-chain:comment', 'supply-chain:attachments'
+    'supply-chain:create', 'supply-chain:update', 'supply-chain:view', 'supply-chain:comment', 'supply-chain:attachments',
+    'product-identity:create', 'product-identity:view', 'product-identity:update', 'product-identity:delete', 'qr:generate', 'qr:download', 'qr:regenerate', 'verification:view', 'verification:statistics',
+    'analytics:dashboard', 'analytics:reports', 'analytics:exports', 'analytics:kpis', 'analytics:comparisons', 'reports:create', 'reports:download', 'reports:manage',
+    'health:view'
   ],
   Buyer: [
     'business:view',
@@ -74,7 +113,9 @@ const rolePermissionsMap = {
   FinancialInstitution: [
     'business:view',
     'product:view', 'reports:view', 'analytics:view',
-    'supply-chain:view'
+    'supply-chain:view', 'verification:view', 'verification:statistics',
+    'analytics:kpis', 'analytics:reports',
+    'health:view'
   ]
 };
 
@@ -149,6 +190,59 @@ async function main() {
       where: { name: type.name },
       update: { category: type.category, description: type.description },
       create: type
+    });
+  }
+
+  // Seed default admin user to bind settings and feature flags updates
+  console.log('Seeding default administrator user...');
+  const adminRole = roles['PlatformAdmin'];
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@supplychainplus.com' },
+    update: {},
+    create: {
+      id: 'admin-user-uuid-12345',
+      email: 'admin@supplychainplus.com',
+      passwordHash: '$2b$10$EpjX0VOqXYrrjhCoa6.TbeZ0jU9n3zD6G/qEa1l0bJk1l2m3n4o5p', // testpass
+      firstName: 'System',
+      lastName: 'Administrator',
+      status: 'ACTIVE',
+      roleId: adminRole.id,
+    },
+  });
+
+  // Seed platform settings
+  console.log('Seeding default platform settings...');
+  const defaultSettings = [
+    { settingKey: 'Registration Enabled', settingValue: 'true', category: 'Security', description: 'Enable user registration' },
+    { settingKey: 'Maintenance Mode', settingValue: 'false', category: 'System', description: 'Force maintenance lockout responses' },
+    { settingKey: 'QR Expiration Period', settingValue: '365', category: 'QR Code', description: 'Expiration period in days' },
+  ];
+  for (const setting of defaultSettings) {
+    await prisma.platformSetting.upsert({
+      where: { settingKey: setting.settingKey },
+      update: {},
+      create: {
+        ...setting,
+        updatedBy: adminUser.id,
+      },
+    });
+  }
+
+  // Seed feature flags
+  console.log('Seeding default feature flags...');
+  const defaultFlags = [
+    { featureName: 'Blockchain Enabled', enabled: false, description: 'Enable blockchain anchors' },
+    { featureName: 'Analytics Enabled', enabled: true, description: 'Enable analytics engine' },
+    { featureName: 'QR Verification Enabled', enabled: true, description: 'Enable verification services' },
+  ];
+  for (const flag of defaultFlags) {
+    await prisma.featureFlag.upsert({
+      where: { featureName: flag.featureName },
+      update: {},
+      create: {
+        ...flag,
+        updatedBy: adminUser.id,
+      },
     });
   }
 

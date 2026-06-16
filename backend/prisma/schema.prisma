@@ -30,6 +30,16 @@ model User {
   uploadedProductDocuments ProductDocument[]
   performedEvents         SupplyChainEvent[]       @relation("EventPerformer")
   supplyChainComments     SupplyChainComment[]
+  generatedIdentities     ProductIdentity[]
+  reportDefinitions       ReportDefinition[]
+  generatedReports        GeneratedReport[]
+  dashboardPreference     DashboardPreference?
+  notifications           Notification[]
+  announcements           Announcement[]
+  updatedSettings         PlatformSetting[]
+  updatedFeatureFlags     FeatureFlag[]
+  activityLogs            ActivityLog[]
+  maintenanceWindows      MaintenanceWindow[]
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
 }
@@ -210,6 +220,7 @@ model Product {
   images              ProductImage[]
   documents           ProductDocument[]
   supplyChainEvents   SupplyChainEvent[]
+  productIdentities   ProductIdentity[]
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
 }
@@ -317,4 +328,192 @@ model SupplyChainComment {
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   comment   String
   createdAt DateTime         @default(now())
+}
+
+model ProductIdentity {
+  id                     String              @id @default(uuid())
+  productId              String
+  product                Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  businessId             String
+  verificationToken      String              @unique // uuid v4
+  qrVersion              Int                 @default(1)
+  qrStatus               String              @default("GENERATED") // GENERATED, ACTIVATED, PRINTED, ACTIVE, EXPIRED, REVOKED, ARCHIVED
+  generatedBy            String
+  generator              User                @relation(fields: [generatedBy], references: [id])
+  generatedAt            DateTime            @default(now())
+  activatedAt            DateTime?
+  expiresAt              DateTime?
+  revokedAt              DateTime?
+  lastScanAt             DateTime?
+  totalScans             Int                 @default(0)
+  blockchainStatus       String              @default("PENDING")
+  blockchainTransactionId String?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  qrCodeAssets           QRCodeAsset[]
+  verificationEvents     VerificationEvent[]
+}
+
+model QRCodeAsset {
+  id                String          @id @default(uuid())
+  productIdentityId String
+  productIdentity   ProductIdentity @relation(fields: [productIdentityId], references: [id], onDelete: Cascade)
+  imagePath         String
+  imageFormat       String          // PNG, SVG, PDF
+  imageSize         Int
+  downloadCount     Int             @default(0)
+  printCount        Int             @default(0)
+  createdAt         DateTime        @default(now())
+}
+
+model VerificationEvent {
+  id                String          @id @default(uuid())
+  productIdentityId String
+  productIdentity   ProductIdentity @relation(fields: [productIdentityId], references: [id], onDelete: Cascade)
+  verifiedAt        DateTime        @default(now())
+  verificationStatus String         // SUCCESS, FAILED, INVALID_TOKEN, EXPIRED, REVOKED
+  country           String?
+  province          String?
+  district          String?
+  ipHash            String
+  deviceType        String?
+  browser           String?
+  operatingSystem   String?
+  userAgent         String?
+  referrer          String?
+  latitude          Float?
+  longitude         Float?
+  notes             String?
+}
+
+model ReportDefinition {
+  id               String            @id @default(uuid())
+  name             String
+  reportType       String            // BUSINESS, PRODUCT, SUPPLY_CHAIN, VERIFICATION, COOPERATIVE, PLATFORM, SYSTEM_ACTIVITY
+  createdBy        String
+  creator          User              @relation(fields: [createdBy], references: [id])
+  filters          String            // JSON stringified filters
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  generatedReports GeneratedReport[]
+  reportSchedules  ReportSchedule[]
+}
+
+model GeneratedReport {
+  id                 String           @id @default(uuid())
+  reportDefinitionId String
+  reportDefinition   ReportDefinition @relation(fields: [reportDefinitionId], references: [id], onDelete: Cascade)
+  generatedBy        String
+  generator          User             @relation(fields: [generatedBy], references: [id])
+  format             String           // PDF, EXCEL, CSV, JSON
+  filePath           String
+  generatedAt        DateTime         @default(now())
+  expiresAt          DateTime?
+}
+
+model DashboardPreference {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dashboardType String   // ENTREPRENEUR, COOPERATIVE, ADMIN
+  layout        String   // JSON stringified layout preference
+  widgets       String   // JSON stringified active widgets list
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ReportSchedule {
+  id                 String           @id @default(uuid())
+  reportDefinitionId String
+  reportDefinition   ReportDefinition @relation(fields: [reportDefinitionId], references: [id], onDelete: Cascade)
+  frequency          String           // DAILY, WEEKLY, MONTHLY
+  recipient          String
+  format             String           // PDF, EXCEL, CSV, JSON
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String
+  entityType  String
+  entityId    String
+  performedBy String
+  userRole    String
+  ipHash      String
+  userAgent   String?
+  outcome     String   // SUCCESS, FAILED
+  metadata    String?  // JSON string
+  createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id               String    @id @default(uuid())
+  recipientId      String
+  recipient        User      @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  notificationType String    // BUSINESS_APPROVED, BUSINESS_SUSPENDED, PRODUCT_APPROVED, QR_GENERATED, VERIFICATION_FAILED
+  title            String
+  message          String
+  status           String    @default("PENDING") // PENDING, DELIVERED, READ, ARCHIVED
+  readAt           DateTime?
+  deliveredAt      DateTime?
+  createdAt        DateTime  @default(now())
+}
+
+model Announcement {
+  id          String    @id @default(uuid())
+  title       String
+  message     String
+  audience    String    // ALL_USERS, ENTREPRENEURS, COOPERATIVES, ADMINISTRATORS
+  priority    String    @default("NORMAL") // LOW, NORMAL, HIGH
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  createdBy   String
+  creator     User      @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model PlatformSetting {
+  id           String   @id @default(uuid())
+  settingKey   String   @unique
+  settingValue String
+  description  String?
+  category     String
+  updatedBy    String
+  updater      User     @relation(fields: [updatedBy], references: [id])
+  updatedAt    DateTime @updatedAt
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  featureName String   @unique
+  enabled     Boolean  @default(false)
+  description String?
+  updatedBy   String
+  updater     User     @relation(fields: [updatedBy], references: [id])
+  updatedAt   DateTime @updatedAt
+}
+
+model ActivityLog {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityType String
+  description  String
+  entityType   String
+  entityId     String
+  createdAt    DateTime @default(now())
+}
+
+model MaintenanceWindow {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  startsAt    DateTime
+  endsAt      DateTime
+  enabled     Boolean  @default(false)
+  createdBy   String
+  creator     User     @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now())
 }
