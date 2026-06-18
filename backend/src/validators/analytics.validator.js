@@ -1,11 +1,25 @@
 import validate from '../middleware/validator.js';
-import { defaultAnalyticsSchema } from '../schemas/analytics.schema.js';
+import {
+  dashboardQuerySchema,
+  reportCreateSchema,
+  exportRequestSchema,
+  reportScheduleSchema,
+  trendQuerySchema,
+  comparisonQuerySchema,
+} from '../schemas/analytics.schema.js';
 
-/**
- * Default validator middleware for Analytics requests.
- */
-export const validateDefaultAnalytics = validate(defaultAnalyticsSchema, 'body');
+export const validateDashboardQuery = validate(dashboardQuerySchema, 'query');
+export const validateReportCreate = validate(reportCreateSchema, 'body');
+export const validateExportRequest = validate(exportRequestSchema, 'body');
+export const validateReportSchedule = validate(reportScheduleSchema, 'body');
+export const validateTrendQuery = validate(trendQuerySchema, 'query');
+export const validateComparisonQuery = validate(comparisonQuerySchema, 'query');
 
 export default {
-  validateDefaultAnalytics,
+  validateDashboardQuery,
+  validateReportCreate,
+  validateExportRequest,
+  validateReportSchedule,
+  validateTrendQuery,
+  validateComparisonQuery,
 };
