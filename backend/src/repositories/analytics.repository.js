@@ -1,39 +1,236 @@
-/**
- * Repository layer handling database/mock storage operations for Analytics.
- */
+import prisma from '../database/client.js';
+
 export const analyticsRepository = {
-  /**
-   * Retrieves all records of Analytics.
-   */
-  async findAll() {
-    return [
-      { id: '1', name: 'Mock Analytics 1', createdAt: new Date().toISOString() },
-      { id: '2', name: 'Mock Analytics 2', createdAt: new Date().toISOString() },
-    ];
+  // =========================================================================
+  // REPORT DEFINITIONS
+  // =========================================================================
+
+  async createDefinition(createdBy, data) {
+    return prisma.reportDefinition.create({
+      data: {
+        name: data.name,
+        reportType: data.reportType,
+        createdBy,
+        filters: JSON.stringify(data.filters || {}),
+      },
+    });
   },
 
-  /**
-   * Retrieves a single record of Analytics by its unique ID.
-   * @param {string} id - Record ID
-   */
-  async findById(id) {
+  async findDefinitionById(id) {
+    return prisma.reportDefinition.findUnique({
+      where: { id },
+    });
+  },
+
+  async getDefinitions(createdBy) {
+    return prisma.reportDefinition.findMany({
+      where: { createdBy },
+    });
+  },
+
+  async deleteDefinition(id) {
+    return prisma.reportDefinition.delete({
+      where: { id },
+    });
+  },
+
+  // =========================================================================
+  // GENERATED EXPORT LOGS
+  // =========================================================================
+
+  async createGeneratedReport(reportDefinitionId, generatedBy, format, filePath) {
+    return prisma.generatedReport.create({
+      data: {
+        reportDefinitionId,
+        generatedBy,
+        format,
+        filePath,
+      },
+    });
+  },
+
+  async getGeneratedReports(reportDefinitionId) {
+    return prisma.generatedReport.findMany({
+      where: { reportDefinitionId },
+    });
+  },
+
+  // =========================================================================
+  // SCHEDULED REPORT SCHEMAS
+  // =========================================================================
+
+  async createSchedule(reportDefinitionId, data) {
+    return prisma.reportSchedule.create({
+      data: {
+        reportDefinitionId,
+        frequency: data.frequency,
+        recipient: data.recipient,
+        format: data.format,
+      },
+    });
+  },
+
+  async getSchedules() {
+    return prisma.reportSchedule.findMany({
+      include: {
+        reportDefinition: true,
+      },
+    });
+  },
+
+  async deleteSchedule(id) {
+    return prisma.reportSchedule.delete({
+      where: { id },
+    });
+  },
+
+  async updateSchedule(id, data) {
+    return prisma.reportSchedule.update({
+      where: { id },
+      data,
+    });
+  },
+
+  // =========================================================================
+  // METRICS & AGGREGATIONS
+  // =========================================================================
+
+  async getEntrepreneurDashboard(userId) {
+    // Find businesses owned by this entrepreneur user
+    const businesses = await prisma.business.findMany({
+      where: { ownerId: userId },
+      select: { id: true },
+    });
+    const businessIds = businesses.map((b) => b.id);
+
+    const totalBusinesses = businessIds.length;
+
+    const totalProducts = await prisma.product.count({
+      where: { businessId: { in: businessIds } },
+    });
+
+    const activeProducts = await prisma.product.count({
+      where: { businessId: { in: businessIds }, status: 'ACTIVE' },
+    });
+
+    const qrCodesGenerated = await prisma.productIdentity.count({
+      where: { businessId: { in: businessIds } },
+    });
+
+    const qrScans = await prisma.verificationEvent.count({
+      where: { productIdentity: { businessId: { in: businessIds } } },
+    });
+
+    const supplyChainEvents = await prisma.supplyChainEvent.count({
+      where: { product: { businessId: { in: businessIds } } },
+    });
+
+    const successScans = await prisma.verificationEvent.count({
+      where: {
+        productIdentity: { businessId: { in: businessIds } },
+        verificationStatus: 'SUCCESS',
+      },
+    });
+
+    const verificationRate = qrScans > 0 ? (successScans / qrScans) * 100 : 0;
+
     return {
-      id,
-      name: `Mock ${id} - Analytics`,
-      createdAt: new Date().toISOString(),
+      totalBusinesses,
+      totalProducts,
+      activeProducts,
+      qrCodesGenerated,
+      qrScans,
+      supplyChainEvents,
+      verificationRate,
     };
   },
 
-  /**
-   * Persists a new Analytics record.
-   * @param {Object} data - Input fields
-   */
-  async create(data) {
+  async getCooperativeDashboard(userId) {
+    // Resolve cooperative where the user's business is enrolled
+    const ownBusiness = await prisma.business.findFirst({
+      where: { ownerId: userId },
+      select: { cooperativeId: true },
+    });
+
+    const cooperativeId = ownBusiness?.cooperativeId;
+    if (!cooperativeId) {
+      return {
+        totalMemberBusinesses: 0,
+        activeBusinesses: 0,
+        productsRegistered: 0,
+        qrVerifications: 0,
+        cooperativeName: 'No Cooperative Assigned',
+      };
+    }
+
+    const cooperative = await prisma.cooperative.findUnique({
+      where: { id: cooperativeId },
+      select: { cooperativeName: true },
+    });
+
+    const totalMemberBusinesses = await prisma.business.count({
+      where: { cooperativeId },
+    });
+
+    const activeBusinesses = await prisma.business.count({
+      where: { cooperativeId, status: 'ACTIVE' },
+    });
+
+    const productsRegistered = await prisma.product.count({
+      where: { business: { cooperativeId } },
+    });
+
+    const qrVerifications = await prisma.verificationEvent.count({
+      where: { productIdentity: { product: { business: { cooperativeId } } } },
+    });
+
     return {
-      id: `mock_${Math.random().toString(36).substr(2, 9)}`,
-      ...data,
-      createdAt: new Date().toISOString(),
+      cooperativeName: cooperative?.cooperativeName || 'Standard Cooperative',
+      totalMemberBusinesses,
+      activeBusinesses,
+      productsRegistered,
+      qrVerifications,
     };
+  },
+
+  async getAdminDashboard() {
+    const totalUsers = await prisma.user.count();
+    const totalBusinesses = await prisma.business.count();
+    const totalProducts = await prisma.product.count();
+    const totalSupplyChainEvents = await prisma.supplyChainEvent.count();
+    const totalQRIdentities = await prisma.productIdentity.count();
+    const totalVerifications = await prisma.verificationEvent.count();
+
+    const failedVerifications = await prisma.verificationEvent.count({
+      where: { verificationStatus: 'FAILED' },
+    });
+
+    return {
+      totalUsers,
+      totalBusinesses,
+      totalProducts,
+      totalSupplyChainEvents,
+      totalQRIdentities,
+      totalVerifications,
+      failedVerifications,
+    };
+  },
+
+  async getGeographicStats() {
+    // Groups scans count by country/province/district
+    const geoGroups = await prisma.verificationEvent.groupBy({
+      by: ['country', 'province', 'district'],
+      _count: {
+        id: true,
+      },
+    });
+
+    return geoGroups.map((g) => ({
+      country: g.country || 'Rwanda',
+      province: g.province || 'Unknown Province',
+      district: g.district || 'Unknown District',
+      scanCount: g._count.id,
+    }));
   },
 };
 
