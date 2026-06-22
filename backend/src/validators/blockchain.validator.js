@@ -1,11 +1,13 @@
 import validate from '../middleware/validator.js';
-import { defaultBlockchainSchema } from '../schemas/blockchain.schema.js';
+import {
+  recordEventParamsSchema,
+  transactionLookupParamsSchema,
+} from '../schemas/blockchain.schema.js';
 
-/**
- * Default validator middleware for Blockchain requests.
- */
-export const validateDefaultBlockchain = validate(defaultBlockchainSchema, 'body');
+export const validateRecordEventParams = validate(recordEventParamsSchema, 'params');
+export const validateTransactionLookupParams = validate(transactionLookupParamsSchema, 'params');
 
 export default {
-  validateDefaultBlockchain,
+  validateRecordEventParams,
+  validateTransactionLookupParams,
 };

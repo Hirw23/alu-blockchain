@@ -73,6 +73,9 @@ const permissionsData = [
   { name: 'permissions:manage', description: 'Govern permissions registry' },
   { name: 'users:manage', description: 'Deactivate or reset user accounts' },
   { name: 'health:view', description: 'Access system health status details' },
+  { name: 'blockchain:record', description: 'Record supply chain events on ledger node' },
+  { name: 'blockchain:view', description: 'Query ledger transaction metadata details' },
+  { name: 'blockchain:status', description: 'Query blockchain peer network health parameters' },
 ];
 
 const rolePermissionsMap = {
@@ -85,7 +88,8 @@ const rolePermissionsMap = {
     'supply-chain:create', 'supply-chain:update', 'supply-chain:view', 'supply-chain:lock', 'supply-chain:audit', 'supply-chain:comment', 'supply-chain:attachments',
     'product-identity:create', 'product-identity:view', 'product-identity:update', 'product-identity:delete', 'qr:generate', 'qr:download', 'qr:regenerate', 'verification:view', 'verification:statistics',
     'analytics:dashboard', 'analytics:reports', 'analytics:exports', 'analytics:kpis', 'analytics:comparisons', 'reports:create', 'reports:download', 'reports:manage',
-    'admin:view', 'admin:manage', 'audit:view', 'notifications:manage', 'announcements:manage', 'settings:update', 'features:update', 'maintenance:manage', 'roles:manage', 'permissions:manage', 'users:manage', 'health:view'
+    'admin:view', 'admin:manage', 'audit:view', 'notifications:manage', 'announcements:manage', 'settings:update', 'features:update', 'maintenance:manage', 'roles:manage', 'permissions:manage', 'users:manage', 'health:view',
+    'blockchain:record', 'blockchain:view', 'blockchain:status'
   ],
   CooperativeAdmin: [
     'users:update', 'business:view',
@@ -94,7 +98,8 @@ const rolePermissionsMap = {
     'supply-chain:view', 'supply-chain:comment', 'supply-chain:attachments',
     'product-identity:view', 'verification:view', 'verification:statistics',
     'analytics:dashboard', 'analytics:reports', 'analytics:kpis', 'reports:create',
-    'health:view'
+    'health:view',
+    'blockchain:view'
   ],
   Entrepreneur: [
     'business:create', 'business:update', 'business:view', 'business:delete', 'business:manage-members',
@@ -103,19 +108,22 @@ const rolePermissionsMap = {
     'supply-chain:create', 'supply-chain:update', 'supply-chain:view', 'supply-chain:comment', 'supply-chain:attachments',
     'product-identity:create', 'product-identity:view', 'product-identity:update', 'product-identity:delete', 'qr:generate', 'qr:download', 'qr:regenerate', 'verification:view', 'verification:statistics',
     'analytics:dashboard', 'analytics:reports', 'analytics:exports', 'analytics:kpis', 'analytics:comparisons', 'reports:create', 'reports:download', 'reports:manage',
-    'health:view'
+    'health:view',
+    'blockchain:record', 'blockchain:view'
   ],
   Buyer: [
     'business:view',
     'product:view',
-    'supply-chain:view'
+    'supply-chain:view',
+    'blockchain:view'
   ],
   FinancialInstitution: [
     'business:view',
     'product:view', 'reports:view', 'analytics:view',
     'supply-chain:view', 'verification:view', 'verification:statistics',
     'analytics:kpis', 'analytics:reports',
-    'health:view'
+    'health:view',
+    'blockchain:view'
   ]
 };
 

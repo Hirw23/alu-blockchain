@@ -1,12 +1,14 @@
 import Joi from 'joi';
 
-/**
- * Default validation schema for Blockchain.
- */
-export const defaultBlockchainSchema = Joi.object({
-  name: Joi.string().optional(),
+export const recordEventParamsSchema = Joi.object({
+  eventId: Joi.string().uuid().required(),
+});
+
+export const transactionLookupParamsSchema = Joi.object({
+  transactionId: Joi.string().min(10).max(100).required(),
 });
 
 export default {
-  defaultBlockchainSchema,
+  recordEventParamsSchema,
+  transactionLookupParamsSchema,
 };

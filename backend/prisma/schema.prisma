@@ -290,6 +290,9 @@ model SupplyChainEvent {
   location        SupplyChainLocation?
   attachments     SupplyChainAttachment[]
   comments        SupplyChainComment[]
+  blockchainStatus String                  @default("PENDING") // PENDING, RECORDED, FAILED
+  blockchainTransactionId String?
+  blockchainRecordedAt DateTime?
 
   @@unique([productId, sequenceNumber])
 }
