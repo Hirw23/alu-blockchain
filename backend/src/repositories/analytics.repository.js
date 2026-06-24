@@ -205,6 +205,16 @@ export const analyticsRepository = {
       where: { verificationStatus: 'FAILED' },
     });
 
+    const recordedBlockchain = await prisma.supplyChainEvent.count({
+      where: { blockchainStatus: 'RECORDED' },
+    });
+    const failedBlockchain = await prisma.supplyChainEvent.count({
+      where: { blockchainStatus: 'FAILED' },
+    });
+    const pendingBlockchain = await prisma.supplyChainEvent.count({
+      where: { blockchainStatus: 'PENDING' },
+    });
+
     return {
       totalUsers,
       totalBusinesses,
@@ -213,6 +223,12 @@ export const analyticsRepository = {
       totalQRIdentities,
       totalVerifications,
       failedVerifications,
+      blockchainMetrics: {
+        totalBlockchainRecords: totalSupplyChainEvents,
+        successfulRecords: recordedBlockchain,
+        failedRecords: failedBlockchain,
+        pendingRecords: pendingBlockchain,
+      },
     };
   },
 

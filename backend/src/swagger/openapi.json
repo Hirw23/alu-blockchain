@@ -1296,11 +1296,47 @@
         "responses": { "200": { "description": "Success" } }
       }
     },
-    "/blockchain": {
+    "/blockchain/status": {
       "get": {
         "tags": ["Blockchain"],
-        "summary": "Audit logs from ledger node",
-        "responses": { "200": { "description": "Success" } }
+        "summary": "Query peer network status, channel details and chaincode version",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/blockchain/events/{eventId}": {
+      "post": {
+        "tags": ["Blockchain"],
+        "summary": "Anchor a Supply Chain Event on Hyperledger Fabric ledger",
+        "parameters": [
+          { "name": "eventId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "201": { "description": "Successfully recorded" }
+        }
+      },
+      "get": {
+        "tags": ["Blockchain"],
+        "summary": "Retrieve blockchain recorded transaction details for an event",
+        "parameters": [
+          { "name": "eventId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    },
+    "/blockchain/transactions/{transactionId}": {
+      "get": {
+        "tags": ["Blockchain"],
+        "summary": "Query full ledger block metadata payload for a transaction ID",
+        "parameters": [
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
       }
     },
     "/analytics/dashboard": {

@@ -1,38 +1,46 @@
-/**
- * Repository layer handling database/mock storage operations for Blockchain.
- */
+import prisma from '../database/client.js';
+
 export const blockchainRepository = {
-  /**
-   * Retrieves all records of Blockchain.
-   */
-  async findAll() {
-    return [
-      { id: '1', name: 'Mock Blockchain 1', createdAt: new Date().toISOString() },
-      { id: '2', name: 'Mock Blockchain 2', createdAt: new Date().toISOString() },
-    ];
+  async findEventById(id) {
+    return prisma.supplyChainEvent.findUnique({
+      where: { id },
+      include: {
+        eventType: true,
+        location: true,
+      },
+    });
   },
 
-  /**
-   * Retrieves a single record of Blockchain by its unique ID.
-   * @param {string} id - Record ID
-   */
-  async findById(id) {
-    return {
-      id,
-      name: `Mock ${id} - Blockchain`,
-      createdAt: new Date().toISOString(),
-    };
+  async updateEventBlockchainStatus(
+    id,
+    blockchainStatus,
+    blockchainTransactionId = null,
+    blockchainRecordedAt = null
+  ) {
+    return prisma.supplyChainEvent.update({
+      where: { id },
+      data: {
+        blockchainStatus,
+        blockchainTransactionId,
+        blockchainRecordedAt,
+      },
+    });
   },
 
-  /**
-   * Persists a new Blockchain record.
-   * @param {Object} data - Input fields
-   */
-  async create(data) {
+  async getAdminStats() {
+    const [total, recorded, failed, pending] = await Promise.all([
+      prisma.supplyChainEvent.count(),
+      prisma.supplyChainEvent.count({ where: { blockchainStatus: 'RECORDED' } }),
+      prisma.supplyChainEvent.count({ where: { blockchainStatus: 'FAILED' } }),
+      prisma.supplyChainEvent.count({ where: { blockchainStatus: 'PENDING' } }),
+    ]);
+
     return {
-      id: `mock_${Math.random().toString(36).substr(2, 9)}`,
-      ...data,
-      createdAt: new Date().toISOString(),
+      totalBlockchainRecords: total,
+      successfulRecords: recorded,
+      failedRecords: failed,
+      pendingRecords: pending,
+      blockchainRecordingRate: total > 0 ? (recorded / total) * 100 : 0,
     };
   },
 };

@@ -1,33 +1,37 @@
 import blockchainService from '../services/blockchain.service.js';
+import blockchainRepository from '../repositories/blockchain.repository.js';
 import { successResponse } from '../utils/response.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import { NotFoundError } from '../utils/errors.js';
 
-/**
- * Controller exposing standard REST handler methods for Blockchain.
- */
 export const blockchainController = {
-  /**
-   * Endpoint returning all Blockchain items.
-   */
-  getAll: asyncHandler(async (req, res) => {
-    const items = await blockchainService.getAll();
-    res.status(200).json(successResponse('Fetched blockchain items successfully', { items }));
+  recordEvent: asyncHandler(async (req, res) => {
+    const result = await blockchainService.recordEvent(req.params.eventId);
+    res.status(201).json(successResponse('Supply Chain Event recorded on ledger', result));
   }),
 
-  /**
-   * Endpoint returning a specific Blockchain item by its ID.
-   */
-  getById: asyncHandler(async (req, res) => {
-    const item = await blockchainService.getById(req.params.id);
-    res.status(200).json(successResponse('Fetched blockchain item successfully', { item }));
+  getEventBlockchainInfo: asyncHandler(async (req, res) => {
+    const event = await blockchainRepository.findEventById(req.params.eventId);
+    if (!event) {
+      throw new NotFoundError('Supply Chain Event not found');
+    }
+    res.status(200).json(
+      successResponse('Supply Chain Event blockchain mapping details', {
+        blockchainStatus: event.blockchainStatus,
+        blockchainTransactionId: event.blockchainTransactionId,
+        blockchainRecordedAt: event.blockchainRecordedAt,
+      })
+    );
   }),
 
-  /**
-   * Endpoint registering/creating a new Blockchain record.
-   */
-  create: asyncHandler(async (req, res) => {
-    const item = await blockchainService.create(req.body);
-    res.status(201).json(successResponse('Created blockchain item successfully', { item }));
+  getTransactionDetails: asyncHandler(async (req, res) => {
+    const tx = await blockchainService.getTransactionDetails(req.params.transactionId);
+    res.status(200).json(successResponse('Blockchain ledger block payload audited', { tx }));
+  }),
+
+  getNetworkStatus: asyncHandler(async (req, res) => {
+    const status = await blockchainService.getNetworkStatus();
+    res.status(200).json(successResponse('Blockchain Peer network health status', status));
   }),
 };
 
