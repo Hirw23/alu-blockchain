@@ -15,7 +15,7 @@ export const checkMaintenanceMode = async (req, res, next) => {
           const decoded = jwt.verify(token, jwtConfig.secret);
           userRole = decoded.role;
         } catch (err) {
-          // Keep role as null on invalid tokens
+          console.error('Maintenance JWT verification failed:', err.message);
         }
       }
 
