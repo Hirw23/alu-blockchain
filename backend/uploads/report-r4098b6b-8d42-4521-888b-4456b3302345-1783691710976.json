@@ -1,0 +1,16 @@
+{
+  "reportName": "Annual Product Export Report",
+  "reportType": "PRODUCT",
+  "filters": {},
+  "exportedAt": "2026-07-10T13:55:10.976Z",
+  "data": [
+    {
+      "metric": "Registered Products",
+      "value": 12
+    },
+    {
+      "metric": "Scans TotalCount",
+      "value": 154
+    }
+  ]
+}
