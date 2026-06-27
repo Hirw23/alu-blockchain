@@ -1,16 +1,9 @@
-# SupplyChain+
+﻿# SupplyChain+
 ### Blockchain-Based Supply Chain Transparency Platform
 
 A modern enterprise web platform designed to improve supply chain transparency, product traceability, and consumer trust through QR code verification and blockchain technology.
-
-> **Capstone / Dissertation Project**  
-> Bachelor of Information Technology (BIT)
-
----
-
-# [Hero Banner Image]
-
----
+<br>
+<br>
 
 ## 📖 Overview
 
@@ -80,7 +73,7 @@ The system enables:
 - Business verification
 - Cooperative membership
 - Document management
-
+![alt text](./public/image-9.png)
 ---
 
 ## Product Management
@@ -90,7 +83,7 @@ The system enables:
 - Product lifecycle management
 - Product inventory
 - Product status tracking
-
+![alt text](./public/image-8.png)
 ---
 
 ## Supply Chain Management
@@ -101,6 +94,7 @@ The system enables:
 - Warehouse updates
 - Timeline visualization
 - Supply chain event management
+![alt text](./public/image-1.png)
 
 ---
 
@@ -112,7 +106,7 @@ The system enables:
 - Public verification page
 - Verification history
 - Scan analytics
-
+![alt text](./public/image-7.png)
 ---
 
 ## Blockchain Integration
@@ -122,7 +116,7 @@ The system enables:
 - Supply chain integrity
 - Ledger synchronization
 - Transaction monitoring
-
+![alt text](./public/image-6.png)
 ---
 
 ## Analytics & Reporting
@@ -133,7 +127,7 @@ The system enables:
 - Verification reports
 - Exportable reports
 - Administrative insights
-
+![alt text](./public/image-5.png)
 ---
 
 ## Platform Administration
@@ -144,7 +138,7 @@ The system enables:
 - Reports
 - System Monitoring
 - Audit Logs
-
+![alt text](./public/image-2.png)
 ---
 
 # 👥 User Roles & RBAC
@@ -240,7 +234,7 @@ The UI has been divided into three major experiences.
 - Password Recovery
 - QR Verification
 
-[Landing Page Screenshot]
+![alt text](./public/image-4.png)
 
 ---
 
@@ -253,7 +247,7 @@ The UI has been divided into three major experiences.
 - Analytics
 - Reports
 
-[Dashboard Screenshot]
+![alt text](./public/image.png)
 
 ---
 
@@ -266,7 +260,7 @@ The UI has been divided into three major experiences.
 - System Health
 - Platform Settings
 
-[Admin Dashboard Screenshot]
+![alt text](./public/image-3.png)
 
 ---
 
@@ -376,7 +370,7 @@ Security considerations include:
 The current codebase is structured under the following layout:
 
 ```
-scs trading platform/
+alu-blockchain/
 ├── src/                # Backend source code
 │   ├── config/         # Application environment and config loader
 │   ├── middleware/     # Auth, RBAC, Validation, and Global Error handlers
@@ -399,23 +393,104 @@ scs trading platform/
 # 🚀 Running the Application
 
 ### 1. Install Dependencies
+
 ```bash
+cd backend
 npm install
 ```
 
-### 2. Configure Environment
-A default `.env` file is present in the root directory. Feel free to adjust ports or secret keys if necessary.
+---
 
-### 3. Generate OpenAPI Specification
-Run the documentation compiler script to update `openapi.json`:
+### 2. Configure Environment
+
+Copy `.env.example` to `.env` and fill in your local values:
+
 ```bash
-npm run generate-docs
+cp .env.example .env
 ```
 
-### 4. Run the Dev Server
-Start the application locally with auto-reload (nodemon):
+Key variables to configure:
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `JWT_SECRET` | Strong random secret — `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` |
+| `JWT_REFRESH_SECRET` | Separate strong random secret |
+| `CORS_ORIGIN` | Your frontend URL (e.g. `http://localhost:5173`) |
+| `API_BASE_URL` | This server's URL (e.g. `http://localhost:3000`) |
+
+> ⚠️ Never commit your `.env` file — it is excluded by `.gitignore`.
+
+---
+
+### 3. Set Up the Database
+
+Ensure PostgreSQL is running, then apply all Prisma migrations:
+
+```bash
+npx prisma migrate dev
+
+# Optional: seed initial platform data
+npm run db:seed
+```
+
+---
+
+### 4. Run the Development Server
+
 ```bash
 npm run dev
+```
+
+The API will be available at:
+
+| Endpoint | URL |
+|---|---|
+| REST API | `http://localhost:3000/api/v1` |
+| Swagger UI | `http://localhost:3000/api/docs` |
+| Health Check | `http://localhost:3000/api/v1/health` |
+
+---
+
+### 5. Run Tests
+
+```bash
+# Run the full test suite
+npm test
+
+# Run a specific module's tests
+npm test -- --testPathPattern=auth
+```
+
+The suite includes **253 tests across 24 files** covering every module:
+
+| Type | What It Tests |
+|---|---|
+| **Unit** | Service business logic with mocked repositories |
+| **Integration** | Full HTTP request/response lifecycle via Express |
+| **Validation** | Joi schema rules for every endpoint |
+
+---
+
+### 6. Deploy to Production (Render)
+
+All deployment configuration is in [`render.yaml`](render.yaml) at the repo root.
+
+**Render Dashboard — required environment variables:**
+
+| Variable | Notes |
+|---|---|
+| `DATABASE_URL` | Auto-injected when a Render PostgreSQL service is linked |
+| `JWT_SECRET` | 64-byte hex secret — generate locally, never commit |
+| `JWT_REFRESH_SECRET` | Separate 64-byte hex secret |
+| `CORS_ORIGIN` | Frontend Render URL (e.g. `https://your-app.onrender.com`) |
+| `API_BASE_URL` | This service's Render URL (used by Swagger) |
+
+**Render build & start commands** (already set in `render.yaml`):
+
+```
+Build:  npm install && npm run build
+Start:  npm start
 ```
 
 ---
@@ -431,11 +506,11 @@ npm run dev
 | Backend Architecture | ✅ Complete |
 | API Planning | ✅ Complete |
 | OpenAPI Specification | ✅ Complete |
-| Database Design | 🔄 Planned |
-| Backend Development | ⏳ Pending |
+| Database Design | ✅ Complete |
+| Backend Development | ✅ Complete |
+| Blockchain Integration | ✅ Complete |
+| Testing | ✅ Complete |
 | Frontend Development | ⏳ Pending |
-| Blockchain Integration | ⏳ Pending |
-| Testing | ⏳ Pending |
 | Deployment | ⏳ Pending |
 
 ---
@@ -452,7 +527,7 @@ npm run dev
 
 ---
 
-## Phase 2 — Backend Development
+## Phase 2 — Backend Development ✅
 
 - Express API
 - Authentication
@@ -462,17 +537,7 @@ npm run dev
 
 ---
 
-## Phase 3 — Frontend Development
-
-- React Application
-- Dashboard
-- Product Management
-- Analytics
-- Reports
-
----
-
-## Phase 4 — Blockchain Integration
+## Phase 3 — Blockchain Integration ✅
 
 - Hyperledger Fabric
 - Transaction Verification
@@ -481,7 +546,7 @@ npm run dev
 
 ---
 
-## Phase 5 — Testing
+## Phase 4 — Backend Testing ✅
 
 - Unit Testing
 - Integration Testing
@@ -490,6 +555,14 @@ npm run dev
 
 ---
 
+## Phase 5 — Frontend Development
+
+- React Application
+- Dashboard
+- Product Management
+- Analytics
+- Reports
+
 ## Phase 6 — Deployment
 
 - Production Build
@@ -497,19 +570,6 @@ npm run dev
 - Monitoring
 - Documentation
 - Final Presentation
-
----
-
-# 📚 Documentation
-
-Project documentation is organized under the **docs/** directory.
-
-- Software Implementation Plan
-- Backend Architecture
-- UI/UX Design Specification
-- API Specification
-- Database Design
-- Future Development Notes
 
 ---
 
@@ -555,4 +615,4 @@ Special appreciation is extended to the project supervisors, academic institutio
 
 ---
 
-> **Current Status:** The project has successfully completed its architecture, planning, and design phase. Development is now transitioning into implementation, beginning with the backend API, database design, and frontend application.
+> **Current Status:** The project has successfully completed its architecture, planning,design, and backend implementation phases. Development is now transitioning into frontend implementation.

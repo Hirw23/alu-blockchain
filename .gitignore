@@ -1,3 +1,47 @@
-*/**/node_modules
-./blockchain
-./crypto
+# ─── Dependencies ────────────────────────────────────────────
+**/node_modules/
+
+# ─── Environment / Secrets ───────────────────────────────────
+# NEVER commit .env files — set secrets in Render Dashboard
+**/.env
+**/.env.local
+**/.env.production
+# .env.example IS committed — it documents required var names
+!**/.env.example
+
+# ─── Prisma ──────────────────────────────────────────────────
+# Commit schema.prisma and migrations/ — Render needs them
+# Generated client is rebuilt during build via prisma generate
+**/node_modules/.prisma/
+
+# ─── Uploads ─────────────────────────────────────────────────
+# Render's filesystem is ephemeral; uploads are created at runtime
+backend/uploads/
+backend/src/uploads/
+
+# ─── Logs ────────────────────────────────────────────────────
+**/*.log
+**/logs/*.log
+!**/logs/.gitkeep
+
+# ─── Build / Cache ───────────────────────────────────────────
+**/.cache/
+**/dist/
+**/.next/
+
+# ─── Blockchain Fabric artefacts ─────────────────────────────
+/blockchain/
+/crypto/
+**/crypto-config/
+**/channel-artifacts/
+
+# ─── OS / Editor ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+#-----------------
+docs/
+redate_commits.sh

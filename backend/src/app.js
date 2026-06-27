@@ -31,7 +31,17 @@ const app = express();
 
 // Initialize basic middlewares
 app.use(helmet());
-app.use(cors({ origin: appConfig.frontendUrl, credentials: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      if (appConfig.corsOrigins.includes(origin)) return callback(null, true);
+      callback(new Error(`CORS policy: origin '${origin}' is not allowed`));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
