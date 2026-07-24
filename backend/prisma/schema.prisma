@@ -216,6 +216,12 @@ model Product {
   storageRequirements String?
   status              String            @default("DRAFT") // DRAFT, REGISTERED, VERIFIED, ACTIVE, OUT_OF_STOCK, DISCONTINUED, ARCHIVED
   verificationStatus  String            @default("PENDING")
+  blockchainStatus    String            @default("PENDING") // PENDING, PROCESSING, CONFIRMED, FAILED
+  blockchainTransactionId String?
+  blockchainRecordedAt DateTime?
+  blockchainBlockNumber Int?
+  blockchainRetryCount Int              @default(0)
+  blockchainLastError  String?
   variants            ProductVariant[]
   images              ProductImage[]
   documents           ProductDocument[]
@@ -290,9 +296,12 @@ model SupplyChainEvent {
   location        SupplyChainLocation?
   attachments     SupplyChainAttachment[]
   comments        SupplyChainComment[]
-  blockchainStatus String                  @default("PENDING") // PENDING, RECORDED, FAILED
+  blockchainStatus String                  @default("PENDING") // PENDING, PROCESSING, CONFIRMED, FAILED
   blockchainTransactionId String?
   blockchainRecordedAt DateTime?
+  blockchainBlockNumber Int?
+  blockchainRetryCount Int                 @default(0)
+  blockchainLastError String?
 
   @@unique([productId, sequenceNumber])
 }

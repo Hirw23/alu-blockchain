@@ -1,0 +1,15 @@
+{
+  "name": "supplychain-chaincode",
+  "version": "1.0.0",
+  "description": "Hyperledger Fabric chaincode for SupplyChain+ anchoring",
+  "main": "index.js",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "fabric-contract-api": "^2.5.8",
+    "fabric-shim": "^2.5.8",
+    "json-stable-stringify": "^1.3.0"
+  }
+}

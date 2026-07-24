@@ -24,11 +24,27 @@ router.post(
 );
 
 router.get(
+  '/anchor-status/:eventId',
+  authenticate,
+  checkPermission('blockchain:view'),
+  validateRecordEventParams,
+  blockchainController.getAnchorStatus
+);
+
+router.get(
   '/events/:eventId',
   authenticate,
   checkPermission('blockchain:view'),
   validateRecordEventParams,
   blockchainController.getEventBlockchainInfo
+);
+
+router.get(
+  '/events/:eventId/history',
+  authenticate,
+  checkPermission('blockchain:view'),
+  validateRecordEventParams,
+  blockchainController.getEventHistory
 );
 
 router.get(

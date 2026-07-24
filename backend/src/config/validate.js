@@ -15,6 +15,17 @@ const REQUIRED_VARS = [
   { key: 'JWT_REFRESH_SECRET', hint: 'Generate with: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"' },
 ];
 
+const FABRIC_REQUIRED_VARS = [
+  'FABRIC_CHANNEL_NAME',
+  'FABRIC_CHAINCODE_NAME',
+  'FABRIC_MSP_ID',
+  'FABRIC_PEER_ENDPOINT',
+  'FABRIC_PEER_HOST_ALIAS',
+  'FABRIC_TLS_CERT_PATH',
+  'FABRIC_IDENTITY_CERT_PATH',
+  'FABRIC_IDENTITY_KEY_PATH',
+];
+
 const WARN_IF_DEFAULT = [
   { key: 'CORS_ORIGIN', expected: 'https://your-frontend.onrender.com' },
   { key: 'API_BASE_URL', expected: 'https://your-api.onrender.com' },
@@ -37,6 +48,21 @@ export const validateConfig = () => {
     console.error('\nSet these variables in the Render Dashboard → Environment');
     console.error('or in your local .env file before starting the server.\n');
     process.exit(1);
+  }
+
+  if (process.env.BLOCKCHAIN_ENABLED === 'true') {
+    const missingFabricVars = FABRIC_REQUIRED_VARS.filter(
+      (key) => !process.env[key] || process.env[key].trim() === ''
+    );
+
+    if (missingFabricVars.length > 0) {
+      console.error('\n========================================================');
+      console.error('  STARTUP FAILURE - Missing Fabric Environment Vars');
+      console.error('========================================================');
+      missingFabricVars.forEach((key) => console.error(`  ✗ ${key}`));
+      console.error('\nDisable blockchain mode or provide the Fabric wallet and endpoint settings.\n');
+      process.exit(1);
+    }
   }
 
   // Soft warnings — app will run, but these should be set in production

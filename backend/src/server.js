@@ -2,6 +2,8 @@ import { validateConfig } from './config/validate.js';
 import app from './app.js';
 import appConfig from './config/app.js';
 import { ensureUploadsDirectory } from './utils/storage.js';
+import blockchainService from './services/blockchain.service.js';
+import { processPendingAnchors, startAnchorWorker, stopAnchorWorker } from './blockchain/anchorWorker.js';
 
 // ── 1. Validate environment before anything else ─────────────────────────────
 validateConfig();
@@ -24,9 +26,24 @@ const startServer = () => {
     console.log('==========================================');
   });
 
+  blockchainService
+    .connect()
+    .then((status) => {
+      console.log(`[Blockchain] ${status.status}: ${status.message}`);
+      startAnchorWorker();
+      return processPendingAnchors();
+    })
+    .catch((error) => {
+      console.error('[Blockchain] Startup connection failed:', error.message);
+    });
+
   // Handle server errors gracefully
   const handleShutdown = (signal) => {
     console.log(`Received signal ${signal}. Shutting down server gracefully...`);
+    stopAnchorWorker();
+    blockchainService.disconnect().catch((error) => {
+      console.error('[Blockchain] Disconnect failure:', error.message);
+    });
     server.close(() => {
       console.log('HTTP Server closed.');
       process.exit(0);

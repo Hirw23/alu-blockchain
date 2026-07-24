@@ -206,13 +206,13 @@ export const analyticsRepository = {
     });
 
     const recordedBlockchain = await prisma.supplyChainEvent.count({
-      where: { blockchainStatus: 'RECORDED' },
+      where: { blockchainStatus: { in: ['RECORDED', 'CONFIRMED'] } },
     });
     const failedBlockchain = await prisma.supplyChainEvent.count({
       where: { blockchainStatus: 'FAILED' },
     });
     const pendingBlockchain = await prisma.supplyChainEvent.count({
-      where: { blockchainStatus: 'PENDING' },
+      where: { blockchainStatus: { in: ['PENDING', 'PROCESSING'] } },
     });
 
     return {

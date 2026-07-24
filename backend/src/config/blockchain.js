@@ -1,16 +1,25 @@
 import dotenv from 'dotenv';
+import path from 'path';
 dotenv.config();
 
-/**
- * Blockchain configuration for Hyperledger Fabric or relevant ledgers.
- * BLOCKCHAIN_ENABLED=false runs the service in simulation mode.
- */
+const resolveFromBackend = (value) =>
+  value ? path.resolve(process.cwd(), value) : null;
+
 export const blockchainConfig = {
   enabled: process.env.BLOCKCHAIN_ENABLED === 'true',
-  url: process.env.BLOCKCHAIN_URL || 'grpc://localhost:7051',
-  network: process.env.BLOCKCHAIN_NETWORK || 'mainchannel',
-  channel: process.env.BLOCKCHAIN_CHANNEL || 'mainchannel',
-  chaincode: process.env.BLOCKCHAIN_CHAINCODE || 'traceability',
+  autoAnchor: process.env.BLOCKCHAIN_AUTO_ANCHOR !== 'false',
+  anchorPollMs: Number(process.env.BLOCKCHAIN_ANCHOR_POLL_MS || 5000),
+  maxRetries: Number(process.env.BLOCKCHAIN_MAX_RETRIES || 5),
+  fabric: {
+    channelName: process.env.FABRIC_CHANNEL_NAME || 'supplychainchannel',
+    chaincodeName: process.env.FABRIC_CHAINCODE_NAME || 'supplychain-cc',
+    mspId: process.env.FABRIC_MSP_ID || 'PlatformOrgMSP',
+    peerEndpoint: process.env.FABRIC_PEER_ENDPOINT || 'localhost:7051',
+    peerHostAlias: process.env.FABRIC_PEER_HOST_ALIAS || 'peer0.org1.example.com',
+    tlsCertPath: resolveFromBackend(process.env.FABRIC_TLS_CERT_PATH),
+    identityCertPath: resolveFromBackend(process.env.FABRIC_IDENTITY_CERT_PATH),
+    identityKeyPath: resolveFromBackend(process.env.FABRIC_IDENTITY_KEY_PATH),
+  },
 };
 
 export default blockchainConfig;

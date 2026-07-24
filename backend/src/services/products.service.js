@@ -1,6 +1,16 @@
 import productsRepository from '../repositories/products.repository.js';
 import businessesService from './businesses.service.js';
+import { blockchainConfig } from '../config/blockchain.js';
 import { ConflictError, NotFoundError, ForbiddenError } from '../utils/errors.js';
+
+const triggerAnchorWorker = async () => {
+  if (!blockchainConfig.enabled || !blockchainConfig.autoAnchor) {
+    return;
+  }
+
+  const { processPendingAnchors } = await import('../blockchain/anchorWorker.js');
+  return processPendingAnchors();
+};
 
 /**
  * Checks if a user has management permissions (Owner/Manager) for a business.
@@ -48,7 +58,13 @@ export const productsService = {
       throw new NotFoundError('Category not found');
     }
 
-    return productsRepository.createProduct(createdBy, data);
+    const product = await productsRepository.createProduct(createdBy, data);
+
+    triggerAnchorWorker().catch((error) => {
+      console.error(`Product anchor queue kick-off failed for ${product.id}:`, error.message);
+    });
+
+    return product;
   },
 
   async getProduct(id) {

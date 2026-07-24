@@ -1,6 +1,5 @@
 import adminService from '../services/admin.service.js';
-import jwt from 'jsonwebtoken';
-import jwtConfig from '../config/jwt.js';
+import { verifyAccessToken } from '../utils/jwt.utils.js';
 
 export const checkMaintenanceMode = async (req, res, next) => {
   try {
@@ -12,7 +11,7 @@ export const checkMaintenanceMode = async (req, res, next) => {
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         try {
-          const decoded = jwt.verify(token, jwtConfig.secret);
+          const decoded = verifyAccessToken(token);
           userRole = decoded.role;
         } catch (err) {
           console.error('Maintenance JWT verification failed:', err.message);

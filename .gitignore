@@ -30,7 +30,11 @@ backend/src/uploads/
 **/.next/
 
 # ─── Blockchain Fabric artefacts ─────────────────────────────
-/blockchain/
+/blockchain/wallet/
+/blockchain/network/fabric-samples/
+/blockchain/network/organizations/
+/blockchain/network/system-genesis-block/
+/blockchain/network/channel-artifacts/
 /crypto/
 **/crypto-config/
 **/channel-artifacts/
@@ -43,5 +47,6 @@ Thumbs.db
 *.swp
 
 #-----------------
-docs/
 redate_commits.sh
+
+/docs

@@ -224,7 +224,9 @@ export const qrService = {
     const currentStage = await supplychainService.getCurrentStage(identity.productId);
     const timeline = await supplychainService.getTimeline(identity.productId);
 
-    const recordedEvent = timeline.find((evt) => evt.blockchainStatus === 'RECORDED');
+    const recordedEvent = timeline.find((evt) =>
+      ['RECORDED', 'CONFIRMED'].includes(evt.blockchainStatus)
+    );
 
     return {
       verificationStatus: status,

@@ -12,6 +12,28 @@ const prismaMock = {
   },
 };
 
+const mockContract = {
+  submitTransaction: jest.fn(),
+  evaluateTransaction: jest.fn(),
+};
+
+jest.unstable_mockModule('../config/blockchain.js', () => ({
+  blockchainConfig: {
+    enabled: true,
+    fabric: {
+      channelName: 'supplychainchannel',
+      chaincodeName: 'supplychain-cc',
+      peerEndpoint: 'localhost:7051',
+    },
+  },
+}));
+
+jest.unstable_mockModule('../blockchain/fabricConnection.js', () => ({
+  connectFabric: jest.fn(),
+  disconnectFabric: jest.fn(),
+  getFabricContract: jest.fn().mockResolvedValue(mockContract),
+}));
+
 // Mock database client module
 jest.unstable_mockModule('../database/client.js', () => {
   return {
@@ -63,15 +85,22 @@ describe('Blockchain Integration API Endpoints', () => {
       id: testEventId,
       productId: 'prod-honey-123',
       businessId: 'biz-123',
+      performedBy: 'usr-admin-123',
       sequenceNumber: 1,
       title: 'Harvested Honey Logs',
       eventStatus: 'LOCKED',
+      occurredAt: new Date().toISOString(),
+      eventType: { name: 'Harvested' },
+      attachments: [],
       blockchainStatus: 'PENDING',
     });
   });
 
   describe('GET /api/v1/blockchain/status', () => {
     it('should query peer network connection health status details', async () => {
+      mockContract.evaluateTransaction.mockResolvedValue(
+        Buffer.from(JSON.stringify({ ok: true, chaincodeVersion: '1.0.0' }))
+      );
       const res = await request(app)
         .get('/api/v1/blockchain/status')
         .set('Authorization', `Bearer ${adminToken}`)
@@ -87,9 +116,18 @@ describe('Blockchain Integration API Endpoints', () => {
     it('should anchor event details to blockchain ledger gateways', async () => {
       prismaMock.supplyChainEvent.update.mockResolvedValue({
         id: testEventId,
-        blockchainStatus: 'RECORDED',
+        blockchainStatus: 'CONFIRMED',
         blockchainTransactionId: 'tx-mock-code-123',
       });
+      mockContract.submitTransaction.mockResolvedValue(
+        Buffer.from(
+          JSON.stringify({
+            txId: 'tx-mock-code-123',
+            blockNumber: 9,
+            timestamp: new Date().toISOString(),
+          })
+        )
+      );
 
       const res = await request(app)
         .post(`/api/v1/blockchain/events/${testEventId}`)
@@ -98,7 +136,7 @@ describe('Blockchain Integration API Endpoints', () => {
 
       expect(res.statusCode).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.blockchainStatus).toBe('RECORDED');
+      expect(res.body.data.blockchainStatus).toBe('CONFIRMED');
     });
 
     it('should restrict manual ledger recording to authorized users only', async () => {

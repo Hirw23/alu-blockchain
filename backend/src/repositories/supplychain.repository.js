@@ -122,9 +122,21 @@ export const supplychainRepository = {
   },
 
   async updateStatus(id, eventStatus) {
+    const blockchainData =
+      eventStatus === 'CONFIRMED' || eventStatus === 'LOCKED'
+        ? {
+            blockchainStatus: 'PENDING',
+            blockchainRetryCount: 0,
+            blockchainLastError: null,
+          }
+        : {};
+
     return prisma.supplyChainEvent.update({
       where: { id },
-      data: { eventStatus },
+      data: {
+        eventStatus,
+        ...blockchainData,
+      },
       include: {
         eventType: true,
       },

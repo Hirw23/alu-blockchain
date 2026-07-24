@@ -1,6 +1,16 @@
 import supplychainRepository from '../repositories/supplychain.repository.js';
 import productsService from './products.service.js';
+import { blockchainConfig } from '../config/blockchain.js';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../utils/errors.js';
+
+const triggerAnchorWorker = async () => {
+  if (!blockchainConfig.enabled || !blockchainConfig.autoAnchor) {
+    return;
+  }
+
+  const { processPendingAnchors } = await import('../blockchain/anchorWorker.js');
+  return processPendingAnchors();
+};
 
 const eventOrderWeight = {
   Harvested: 1,
@@ -145,7 +155,15 @@ export const supplychainService = {
       throw new ForbiddenError('Only platform administrators can modify locked events');
     }
 
-    return supplychainRepository.updateStatus(id, status);
+    const updatedEvent = await supplychainRepository.updateStatus(id, status);
+
+    if (['CONFIRMED', 'LOCKED'].includes(status)) {
+      triggerAnchorWorker().catch((error) => {
+        console.error(`Event anchor queue kick-off failed for ${id}:`, error.message);
+      });
+    }
+
+    return updatedEvent;
   },
 
   async search(filters) {
