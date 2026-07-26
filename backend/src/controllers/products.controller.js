@@ -1,6 +1,7 @@
 import productsService from '../services/products.service.js';
 import { successResponse } from '../utils/response.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import { buildFileUrl } from '../middleware/upload.js';
 
 export const productsController = {
   // =========================================================================
@@ -187,12 +188,11 @@ export const productsController = {
   // =========================================================================
 
   addImage: asyncHandler(async (req, res) => {
-    const image = await productsService.addImage(
-      req.params.id,
-      req.user.id,
-      req.user.role,
-      req.body
-    );
+    const image = await productsService.addImage(req.params.id, req.user.id, req.user.role, {
+      ...req.body,
+      fileName: req.file.originalname,
+      fileUrl: buildFileUrl(req, req.file.filename),
+    });
     res.status(201).json(successResponse('Product image upload recorded successfully', { image }));
   }),
 
@@ -231,12 +231,11 @@ export const productsController = {
   // =========================================================================
 
   addDocument: asyncHandler(async (req, res) => {
-    const document = await productsService.addDocument(
-      req.params.id,
-      req.user.id,
-      req.user.role,
-      req.body
-    );
+    const document = await productsService.addDocument(req.params.id, req.user.id, req.user.role, {
+      ...req.body,
+      fileName: req.file.originalname,
+      fileUrl: buildFileUrl(req, req.file.filename),
+    });
     res
       .status(201)
       .json(successResponse('Product document metadata recorded successfully', { document }));

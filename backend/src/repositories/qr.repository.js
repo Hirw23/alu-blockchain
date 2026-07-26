@@ -51,6 +51,24 @@ export const qrRepository = {
     });
   },
 
+  // Product-scoped identity lookup — resolves the current (most recently generated) identity
+  // for a product, used by the /products/:id/identity and /products/:id/qr* routes where the
+  // URL only ever carries the product's id, not the identity's own primary key.
+  async findByProductId(productId) {
+    return prisma.productIdentity.findFirst({
+      where: { productId },
+      orderBy: { qrVersion: 'desc' },
+      include: {
+        product: {
+          include: {
+            business: true,
+          },
+        },
+        qrCodeAssets: true,
+      },
+    });
+  },
+
   async findByToken(verificationToken) {
     return prisma.productIdentity.findUnique({
       where: { verificationToken },

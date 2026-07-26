@@ -6,7 +6,7 @@ import {
   postCommentSchema,
   searchEventSchema,
   locationSchema,
-  attachmentSchema,
+  attachmentUploadSchema,
 } from '../schemas/supplychain.schema.js';
 
 export const validateCreateEvent = validate(createEventSchema, 'body');
@@ -15,7 +15,7 @@ export const validateUpdateEventStatus = validate(updateEventStatusSchema, 'body
 export const validatePostComment = validate(postCommentSchema, 'body');
 export const validateSearchEvent = validate(searchEventSchema, 'query');
 export const validateLocation = validate(locationSchema, 'body');
-export const validateAttachment = validate(attachmentSchema, 'body');
+export const validateAttachment = validate(attachmentUploadSchema, 'body');
 
 export default {
   validateCreateEvent,

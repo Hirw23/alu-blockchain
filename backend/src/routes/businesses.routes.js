@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { checkPermission } from '../middleware/auth.js';
+import { uploadSingle } from '../middleware/upload.js';
 import businessesController from '../controllers/businesses.controller.js';
 import {
   validateCreateBusiness,
@@ -76,6 +77,7 @@ router.patch(
 router.post(
   '/:id/documents',
   checkPermission('business:update'),
+  uploadSingle('file'),
   validateDocument,
   businessesController.addDocument
 );

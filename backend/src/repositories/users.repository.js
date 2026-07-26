@@ -1,3 +1,5 @@
+import prisma from '../database/client.js';
+
 /**
  * Repository performing user querying and updates.
  */
@@ -7,14 +9,10 @@ export const usersRepository = {
    * @param {string} id - User UUID
    */
   async findById(id) {
-    return {
-      id,
-      email: 'mock.user@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-      role: 'Entrepreneur',
-      createdAt: new Date().toISOString(),
-    };
+    return prisma.user.findUnique({
+      where: { id },
+      include: { role: true },
+    });
   },
 
   /**
@@ -23,14 +21,11 @@ export const usersRepository = {
    * @param {Object} updateData - Data fields to update
    */
   async updateProfile(id, updateData) {
-    return {
-      id,
-      email: 'mock.user@example.com',
-      firstName: updateData.firstName || 'John',
-      lastName: updateData.lastName || 'Doe',
-      role: 'Entrepreneur',
-      updatedAt: new Date().toISOString(),
-    };
+    return prisma.user.update({
+      where: { id },
+      data: updateData,
+      include: { role: true },
+    });
   },
 };
 

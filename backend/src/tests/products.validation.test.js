@@ -75,16 +75,14 @@ describe('Products Schemas — Validation Tests', () => {
   describe('imageMetadataSchema', () => {
     it('should pass for valid image metadata', () => {
       const { error } = imageMetadataSchema.validate({
-        fileName: 'honey.jpg',
-        fileUrl: 'https://cdn.example.com/honey.jpg',
+        displayOrder: 2,
       });
       expect(error).toBeUndefined();
     });
 
-    it('should fail when fileUrl is not a valid URI', () => {
+    it('should fail when displayOrder is negative', () => {
       const { error } = imageMetadataSchema.validate({
-        fileName: 'honey.jpg',
-        fileUrl: 'not-a-url',
+        displayOrder: -1,
       });
       expect(error).toBeDefined();
     });
@@ -94,8 +92,6 @@ describe('Products Schemas — Validation Tests', () => {
     it('should pass for a valid document type', () => {
       const { error } = productDocumentSchema.validate({
         documentType: 'Certificate',
-        fileName: 'cert.pdf',
-        fileUrl: 'https://cdn.example.com/cert.pdf',
       });
       expect(error).toBeUndefined();
     });
@@ -103,8 +99,6 @@ describe('Products Schemas — Validation Tests', () => {
     it('should fail for unsupported document type', () => {
       const { error } = productDocumentSchema.validate({
         documentType: 'Invoice',
-        fileName: 'inv.pdf',
-        fileUrl: 'https://cdn.example.com/inv.pdf',
       });
       expect(error).toBeDefined();
     });

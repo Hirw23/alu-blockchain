@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import supplychainController from '../controllers/supplychain.controller.js';
 import { authenticate, checkPermission } from '../middleware/auth.js';
+import { uploadSingle } from '../middleware/upload.js';
 import {
   validateCreateEvent,
   validateUpdateEvent,
@@ -65,6 +66,7 @@ router.post(
 router.post(
   '/events/:id/attachments',
   checkPermission('supply-chain:attachments'),
+  uploadSingle('file'),
   validateAttachment,
   supplychainController.addAttachment
 );

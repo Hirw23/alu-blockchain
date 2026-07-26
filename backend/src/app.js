@@ -1,3 +1,4 @@
+import path from 'path';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -45,6 +46,14 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Serve uploaded files (business/product documents, images, attachments)
+app.use(
+  '/uploads',
+  express.static(path.resolve('uploads'), {
+    setHeaders: (res) => res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'),
+  })
+);
 
 // Custom tracking headers and request logging
 app.use(requestId);

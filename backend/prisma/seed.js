@@ -204,16 +204,21 @@ async function main() {
   // Seed default admin user to bind settings and feature flags updates
   console.log('Seeding default administrator user...');
   const adminRole = roles['PlatformAdmin'];
+  // Hash generated fresh for the literal string "testpass" — the previous hardcoded hash here
+  // did not actually correspond to "testpass" (bcrypt.compare failed), making this account
+  // impossible to log into despite matching the documented seed credentials.
+  const adminPasswordHash = '$2b$10$0Ehh6mUVUFZ30YY5Nt77EeBgniDen4dbdUW0HfXGFSd2DayHF.Abu'; // testpass
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@supplychainplus.com' },
-    update: {},
+    update: { emailVerified: true, passwordHash: adminPasswordHash },
     create: {
       id: 'admin-user-uuid-12345',
       email: 'admin@supplychainplus.com',
-      passwordHash: '$2b$10$EpjX0VOqXYrrjhCoa6.TbeZ0jU9n3zD6G/qEa1l0bJk1l2m3n4o5p', // testpass
+      passwordHash: adminPasswordHash,
       firstName: 'System',
       lastName: 'Administrator',
       status: 'ACTIVE',
+      emailVerified: true,
       roleId: adminRole.id,
     },
   });

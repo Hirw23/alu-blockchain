@@ -14,13 +14,14 @@ export const qrController = {
   }),
 
   getIdentity: asyncHandler(async (req, res) => {
-    const identity = await qrService.getIdentity(req.params.id);
+    const identity = await qrService.getIdentityByProductId(req.params.id);
     res.status(200).json(successResponse('Digital identity details retrieved', { identity }));
   }),
 
   updateStatus: asyncHandler(async (req, res) => {
+    const current = await qrService.getIdentityByProductId(req.params.id);
     const identity = await qrService.updateStatus(
-      req.params.id,
+      current.id,
       req.user.id,
       req.user.role,
       req.body.status
@@ -29,12 +30,14 @@ export const qrController = {
   }),
 
   deleteIdentity: asyncHandler(async (req, res) => {
-    await qrService.deleteIdentity(req.params.id, req.user.id, req.user.role);
+    const current = await qrService.getIdentityByProductId(req.params.id);
+    await qrService.deleteIdentity(current.id, req.user.id, req.user.role);
     res.status(200).json(successResponse('Digital identity deleted successfully'));
   }),
 
   generateQr: asyncHandler(async (req, res) => {
-    const asset = await qrService.generateQr(req.params.id, req.user.id, req.user.role, req.body);
+    const current = await qrService.getIdentityByProductId(req.params.id);
+    const asset = await qrService.generateQr(current.id, req.user.id, req.user.role, req.body);
     res.status(201).json(successResponse('QR Code generated successfully', { asset }));
   }),
 
@@ -44,8 +47,9 @@ export const qrController = {
   }),
 
   previewQr: asyncHandler(async (req, res) => {
+    const current = await qrService.getIdentityByProductId(req.params.id);
     const format = req.query.format || 'PNG';
-    const result = await qrService.previewQr(req.params.id, req.user.id, req.user.role, format);
+    const result = await qrService.previewQr(current.id, req.user.id, req.user.role, format);
 
     if (format === 'SVG') {
       res.setHeader('Content-Type', 'image/svg+xml');
@@ -98,12 +102,14 @@ export const qrController = {
   }),
 
   getAssets: asyncHandler(async (req, res) => {
-    const assets = await qrService.getAssets(req.params.id);
+    const current = await qrService.getIdentityByProductId(req.params.id);
+    const assets = await qrService.getAssets(current.id);
     res.status(200).json(successResponse('Digital identity QR assets list', { assets }));
   }),
 
   deleteAsset: asyncHandler(async (req, res) => {
-    await qrService.deleteAsset(req.params.id, req.params.assetId, req.user.id, req.user.role);
+    const current = await qrService.getIdentityByProductId(req.params.id);
+    await qrService.deleteAsset(current.id, req.params.assetId, req.user.id, req.user.role);
     res.status(200).json(successResponse('QR Code asset deleted successfully'));
   }),
 };

@@ -94,6 +94,7 @@ model EmailVerificationToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String   @unique
   expiresAt DateTime
+  verified  Boolean  @default(false)
 }
 
 model Business {

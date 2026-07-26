@@ -20,6 +20,14 @@ export const attachmentSchema = Joi.object({
     .required(),
 });
 
+// Used by the single-file upload endpoint (POST /events/:id/attachments); fileName/fileUrl
+// are derived server-side from the uploaded file rather than supplied by the client.
+export const attachmentUploadSchema = Joi.object({
+  documentType: Joi.string()
+    .valid('Image', 'PDF', 'Certificate', 'Delivery Note', 'Receipt', 'Inspection Report', 'Other')
+    .required(),
+});
+
 export const createEventSchema = Joi.object({
   productId: Joi.string().uuid().required(),
   eventTypeId: Joi.string().uuid().required(),
@@ -59,6 +67,7 @@ export const searchEventSchema = Joi.object({
 export default {
   locationSchema,
   attachmentSchema,
+  attachmentUploadSchema,
   createEventSchema,
   updateEventSchema,
   updateEventStatusSchema,

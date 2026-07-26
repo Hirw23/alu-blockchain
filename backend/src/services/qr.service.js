@@ -76,6 +76,19 @@ export const qrService = {
     return identity;
   },
 
+  // Resolves the current identity for a product id — this is what every /products/:id/identity
+  // and /products/:id/qr* route actually has available (the URL carries the product's id, never
+  // the identity's own primary key). Controllers call this first, then delegate to the
+  // identity-keyed methods below (getIdentity/updateStatus/generateQr/etc.) with the resolved
+  // identity.id, matching how bulkGenerate already correctly chains createIdentity -> generateQr.
+  async getIdentityByProductId(productId) {
+    const identity = await qrRepository.findByProductId(productId);
+    if (!identity) {
+      throw new NotFoundError('No digital identity has been generated for this product yet');
+    }
+    return identity;
+  },
+
   async deleteIdentity(id, userId, userRole) {
     const identity = await this.getIdentity(id);
     checkIdentityAccess(identity.product.business, userId, userRole);

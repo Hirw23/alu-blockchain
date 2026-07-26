@@ -119,8 +119,6 @@ describe('Businesses Schemas — Validation Tests', () => {
     it('should pass for valid document metadata', () => {
       const { error } = documentSchema.validate({
         documentType: 'Registration Certificate',
-        fileName: 'cert.pdf',
-        fileUrl: 'https://cdn.example.com/cert.pdf',
       });
       expect(error).toBeUndefined();
     });
@@ -128,8 +126,6 @@ describe('Businesses Schemas — Validation Tests', () => {
     it('should fail for unknown documentType', () => {
       const { error } = documentSchema.validate({
         documentType: 'Invoice',
-        fileName: 'inv.pdf',
-        fileUrl: 'https://cdn.example.com/inv.pdf',
       });
       expect(error).toBeDefined();
     });

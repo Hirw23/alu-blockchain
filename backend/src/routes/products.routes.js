@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { checkPermission } from '../middleware/auth.js';
+import { uploadSingle } from '../middleware/upload.js';
 import productsController from '../controllers/products.controller.js';
 import supplychainController from '../controllers/supplychain.controller.js';
 import {
@@ -93,6 +94,7 @@ router.delete(
 router.post(
   '/:id/images',
   checkPermission('product:manage-images'),
+  uploadSingle('file'),
   validateImageMetadata,
   productsController.addImage
 );
@@ -112,6 +114,7 @@ router.patch(
 router.post(
   '/:id/documents',
   checkPermission('product:manage-documents'),
+  uploadSingle('file'),
   validateProductDocument,
   productsController.addDocument
 );

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import analyticsRepository from '../repositories/analytics.repository.js';
+import prisma from '../database/client.js';
 import { NotFoundError } from '../utils/errors.js';
 
 export const reportsService = {
@@ -33,6 +34,97 @@ export const reportsService = {
   // EXPORT ENGINE
   // =========================================================================
 
+  /**
+   * Computes real metrics for a report definition from the database,
+   * scoped to filters.businessId when present.
+   */
+  async buildReportMetrics(definition) {
+    let filters = {};
+    try {
+      filters = JSON.parse(definition.filters || '{}');
+    } catch {
+      filters = {};
+    }
+    const businessId = filters.businessId;
+    const businessWhere = businessId ? { businessId } : {};
+
+    switch (definition.reportType) {
+      case 'PRODUCT': {
+        const [total, active] = await Promise.all([
+          prisma.product.count({ where: businessWhere }),
+          prisma.product.count({ where: { ...businessWhere, status: 'ACTIVE' } }),
+        ]);
+        return [
+          { metric: 'Total Products', value: total },
+          { metric: 'Active Products', value: active },
+        ];
+      }
+      case 'SUPPLY_CHAIN': {
+        const [total, confirmed] = await Promise.all([
+          prisma.supplyChainEvent.count({ where: businessWhere }),
+          prisma.supplyChainEvent.count({ where: { ...businessWhere, eventStatus: 'CONFIRMED' } }),
+        ]);
+        return [
+          { metric: 'Total Supply Chain Events', value: total },
+          { metric: 'Confirmed Events', value: confirmed },
+        ];
+      }
+      case 'VERIFICATION': {
+        const verificationWhere = businessId ? { productIdentity: { businessId } } : {};
+        const [total, successful] = await Promise.all([
+          prisma.verificationEvent.count({ where: verificationWhere }),
+          prisma.verificationEvent.count({
+            where: { ...verificationWhere, verificationStatus: 'SUCCESS' },
+          }),
+        ]);
+        return [
+          { metric: 'Total Verification Scans', value: total },
+          { metric: 'Successful Verifications', value: successful },
+        ];
+      }
+      case 'COOPERATIVE': {
+        const [total, active] = await Promise.all([
+          prisma.cooperative.count(),
+          prisma.cooperative.count({ where: { status: 'ACTIVE' } }),
+        ]);
+        return [
+          { metric: 'Total Cooperatives', value: total },
+          { metric: 'Active Cooperatives', value: active },
+        ];
+      }
+      case 'SYSTEM_ACTIVITY': {
+        const [users, businesses] = await Promise.all([prisma.user.count(), prisma.business.count()]);
+        return [
+          { metric: 'Registered Users', value: users },
+          { metric: 'Registered Businesses', value: businesses },
+        ];
+      }
+      case 'PLATFORM': {
+        const [businesses, products, scans] = await Promise.all([
+          prisma.business.count(),
+          prisma.product.count(),
+          prisma.verificationEvent.count(),
+        ]);
+        return [
+          { metric: 'Total Businesses', value: businesses },
+          { metric: 'Total Products', value: products },
+          { metric: 'Total Verification Scans', value: scans },
+        ];
+      }
+      case 'BUSINESS':
+      default: {
+        const [total, active] = await Promise.all([
+          prisma.business.count({ where: businessWhere }),
+          prisma.business.count({ where: { ...businessWhere, status: 'ACTIVE' } }),
+        ]);
+        return [
+          { metric: 'Total Businesses', value: total },
+          { metric: 'Active Businesses', value: active },
+        ];
+      }
+    }
+  },
+
   async exportReport(definitionId, userId, format) {
     const definition = await this.getDefinition(definitionId);
 
@@ -44,28 +136,27 @@ export const reportsService = {
     const filename = `report-${definition.id}-${Date.now()}.${format.toLowerCase()}`;
     const filePath = path.join(uploadsDir, filename);
 
-    // Mock content generation to avoid large binaries overhead
-    const mockContent = {
+    const data = await this.buildReportMetrics(definition);
+    const content = {
       reportName: definition.name,
       reportType: definition.reportType,
       filters: JSON.parse(definition.filters),
       exportedAt: new Date().toISOString(),
-      data: [
-        { metric: 'Registered Products', value: 12 },
-        { metric: 'Scans TotalCount', value: 154 },
-      ],
+      data,
     };
 
     if (format === 'JSON') {
-      fs.writeFileSync(filePath, JSON.stringify(mockContent, null, 2));
+      fs.writeFileSync(filePath, JSON.stringify(content, null, 2));
     } else if (format === 'CSV') {
-      const csvStr = 'Metric,Value\nRegistered Products,12\nScans TotalCount,154';
-      fs.writeFileSync(filePath, csvStr);
+      const csvRows = ['Metric,Value', ...data.map((d) => `${d.metric},${d.value}`)];
+      fs.writeFileSync(filePath, csvRows.join('\n'));
     } else if (format === 'EXCEL') {
-      fs.writeFileSync(filePath, `MOCK-EXCEL-BINARY-DATA:${JSON.stringify(mockContent)}`);
+      // No xlsx-generation library is installed; write real data as a text placeholder.
+      fs.writeFileSync(filePath, `MOCK-EXCEL-BINARY-DATA:${JSON.stringify(content)}`);
     } else {
-      // PDF
-      fs.writeFileSync(filePath, `MOCK-PDF-DOCUMENT-SHEET:${definition.name}`);
+      // No PDF-generation library is installed; write real data as a text placeholder.
+      const lines = data.map((d) => `${d.metric}: ${d.value}`).join('\n');
+      fs.writeFileSync(filePath, `MOCK-PDF-DOCUMENT-SHEET:${definition.name}\n${lines}`);
     }
 
     // Save history logs

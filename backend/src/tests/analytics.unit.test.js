@@ -15,7 +15,7 @@ const mockAnalyticsRepo = {
 const mockPrisma = {
   business: { findUnique: jest.fn() },
   product: { findUnique: jest.fn(), count: jest.fn() },
-  verificationEvent: { count: jest.fn() },
+  verificationEvent: { count: jest.fn(), findMany: jest.fn() },
   supplyChainEvent: { findMany: jest.fn() },
 };
 
@@ -103,16 +103,29 @@ describe('AnalyticsService — Unit Tests', () => {
 
   describe('getTrends()', () => {
     it('should return trend data with default DAILY interval', async () => {
+      mockPrisma.verificationEvent.findMany.mockResolvedValue([
+        { verifiedAt: new Date('2026-07-08T10:00:00Z'), verificationStatus: 'SUCCESS' },
+        { verifiedAt: new Date('2026-07-08T14:00:00Z'), verificationStatus: 'SUCCESS' },
+        { verifiedAt: new Date('2026-07-09T09:00:00Z'), verificationStatus: 'FAILED' },
+      ]);
+
       const result = await analyticsService.getTrends();
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toHaveProperty('date');
       expect(result[0]).toHaveProperty('scanCount');
+      const dayOne = result.find((r) => r.date === '2026-07-08' && r.status === 'SUCCESS');
+      expect(dayOne.scanCount).toBe(2);
     });
 
     it('should return trend data when a specific interval is provided', async () => {
+      mockPrisma.verificationEvent.findMany.mockResolvedValue([
+        { verifiedAt: new Date('2026-07-08T10:00:00Z'), verificationStatus: 'SUCCESS' },
+      ]);
+
       const result = await analyticsService.getTrends({ interval: 'MONTHLY' });
       expect(Array.isArray(result)).toBe(true);
+      expect(result[0].date).toBe('2026-07');
     });
   });
 

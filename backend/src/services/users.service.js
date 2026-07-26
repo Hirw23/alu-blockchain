@@ -14,6 +14,7 @@ export const usersService = {
     if (!user) {
       throw new NotFoundError('User not found');
     }
+    delete user.passwordHash;
     return user;
   },
 
@@ -23,7 +24,9 @@ export const usersService = {
    * @param {Object} updateData - Values to update
    */
   async updateProfile(id, updateData) {
-    return usersRepository.updateProfile(id, updateData);
+    const user = await usersRepository.updateProfile(id, updateData);
+    delete user.passwordHash;
+    return user;
   },
 };
 

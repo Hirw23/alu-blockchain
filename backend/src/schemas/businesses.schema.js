@@ -77,8 +77,6 @@ export const documentSchema = Joi.object({
   documentType: Joi.string()
     .valid('Registration Certificate', 'Tax Certificate', 'Business Permit', 'National ID', 'Other')
     .required(),
-  fileName: Joi.string().required(),
-  fileUrl: Joi.string().uri().required(),
 });
 
 /**

@@ -45,10 +45,8 @@ export const authService = {
     expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours expiry
     await authRepository.createEmailVerificationToken(user.id, token, expiresAt);
 
-    // Mock sending email
-    console.log(`[Email Mock] Sent registration verification token to ${user.email}: ${token}`);
-
     delete user.passwordHash;
+    user.verificationToken = token;
     return user;
   },
 
@@ -178,17 +176,18 @@ export const authService = {
   async forgotPassword(email) {
     const user = await authRepository.findByEmail(email);
     // Silent fail in response to avoid user enumeration, but perform actions if exists
+    let resetToken;
     if (user) {
-      const token = uuidv4();
+      resetToken = uuidv4();
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour reset token expiry
-      await authRepository.createPasswordResetToken(user.id, token, expiresAt);
-
-      // Mock sending email
-      console.log(`[Email Mock] Sent password reset verification token to ${email}: ${token}`);
+      await authRepository.createPasswordResetToken(user.id, resetToken, expiresAt);
     }
 
-    return { message: 'If this email is registered, a password reset token has been sent' };
+    return {
+      message: 'If this email is registered, a password reset token has been sent',
+      resetToken,
+    };
   },
 
   /**

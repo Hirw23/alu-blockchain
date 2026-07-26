@@ -28,7 +28,7 @@ export const analyticsController = {
   }),
 
   getTrends: asyncHandler(async (req, res) => {
-    const trends = await analyticsService.getTrends(req.query);
+    const trends = await analyticsService.getTrends({ ...req.query, businessId: req.params.id });
     res.status(200).json(successResponse('Verification trends calculations', { trends }));
   }),
 

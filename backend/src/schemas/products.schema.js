@@ -88,8 +88,6 @@ export const updateVariantSchema = Joi.object({
  * Validation schema for image upload metadata.
  */
 export const imageMetadataSchema = Joi.object({
-  fileName: Joi.string().required(),
-  fileUrl: Joi.string().uri().required(),
   displayOrder: Joi.number().integer().min(0).default(0),
 });
 
@@ -100,8 +98,6 @@ export const productDocumentSchema = Joi.object({
   documentType: Joi.string()
     .valid('Certificate', 'Product Label', 'Safety Sheet', 'Manufacturing Certificate', 'Other')
     .required(),
-  fileName: Joi.string().required(),
-  fileUrl: Joi.string().uri().required(),
 });
 
 /**

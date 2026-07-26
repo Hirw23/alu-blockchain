@@ -1,6 +1,7 @@
 import businessesService from '../services/businesses.service.js';
 import { successResponse } from '../utils/response.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import { buildFileUrl } from '../middleware/upload.js';
 
 export const businessesController = {
   create: asyncHandler(async (req, res) => {
@@ -78,12 +79,11 @@ export const businessesController = {
   }),
 
   addDocument: asyncHandler(async (req, res) => {
-    const document = await businessesService.addDocument(
-      req.params.id,
-      req.user.id,
-      req.user.role,
-      req.body
-    );
+    const document = await businessesService.addDocument(req.params.id, req.user.id, req.user.role, {
+      ...req.body,
+      fileName: req.file.originalname,
+      fileUrl: buildFileUrl(req, req.file.filename),
+    });
     res.status(201).json(successResponse('Business document uploaded successfully', { document }));
   }),
 
