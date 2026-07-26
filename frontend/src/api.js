@@ -17,6 +17,16 @@ api.interceptors.request.use(
     }
     // Generate/Attach request track ID
     config.headers['X-Request-Id'] = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+
+    // For FormData bodies (file uploads), the instance-level default
+    // 'Content-Type: application/json' must be removed so the browser can
+    // set 'multipart/form-data; boundary=...' itself. Axios does not do
+    // this automatically when a Content-Type header is already present —
+    // it instead JSON-stringifies the FormData (dropping the file).
+    if (config.data instanceof FormData) {
+      config.headers.delete('Content-Type');
+    }
+
     return config;
   },
   (error) => {

@@ -73,7 +73,7 @@ services:
       - key: CORS_ORIGIN
         value: https://supplychainplus.netlify.app      # UPDATE: set to frontend Netlify URL
       - key: API_BASE_URL
-        value: https://supplychain-api-3vv8.onrender.com    # UPDATE: set to this service's Render URL
+        value: https://supplychain-api-3vv8.onrender.com/api/v1    # UPDATE: set to this service's Render URL
       - key: FRONTEND_URL
         value: https://supplychainplus.netlify.app    # UPDATE: set to frontend Netlify URL — required for QR codes to be usable
 
