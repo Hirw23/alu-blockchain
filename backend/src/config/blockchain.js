@@ -19,6 +19,11 @@ export const blockchainConfig = {
     tlsCertPath: resolveFromBackend(process.env.FABRIC_TLS_CERT_PATH),
     identityCertPath: resolveFromBackend(process.env.FABRIC_IDENTITY_CERT_PATH),
     identityKeyPath: resolveFromBackend(process.env.FABRIC_IDENTITY_KEY_PATH),
+    // Optional: only needed for gateways (e.g. Kaleido) that require HTTP Basic Auth
+    // on top of the mTLS identity to reach the peer's gRPC endpoint at all. Self-hosted
+    // Fabric networks (e.g. the local test-network) leave these unset.
+    appCredId: process.env.FABRIC_APP_CRED_ID || null,
+    appCredSecret: process.env.FABRIC_APP_CRED_SECRET || null,
   },
 };
 

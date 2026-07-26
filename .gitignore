@@ -38,6 +38,12 @@ backend/src/uploads/
 /crypto/
 **/crypto-config/
 **/channel-artifacts/
+/blockchain/cert.pem
+/blockchain/key.pem
+/blockchain/rootCert.pem
+/blockchain/tlsCert.pem
+/blockchain/chaincode.zip
+/blockchain/.env-blockchain
 
 # ─── OS / Editor ─────────────────────────────────────────────
 .DS_Store

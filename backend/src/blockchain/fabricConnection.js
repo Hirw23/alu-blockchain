@@ -50,7 +50,24 @@ export const connectFabric = async () => {
   const identityCert = fs.readFileSync(blockchainConfig.fabric.identityCertPath);
   const identityKey = createPrivateKey(readFirstPrivateKey(blockchainConfig.fabric.identityKeyPath));
 
-  client = new grpc.Client(blockchainConfig.fabric.peerEndpoint, grpc.credentials.createSsl(tlsRootCert), {
+  const channelCreds = grpc.credentials.createSsl(tlsRootCert);
+  const { appCredId, appCredSecret } = blockchainConfig.fabric;
+
+  // Gateways like Kaleido authenticate the gRPC connection itself with HTTP Basic
+  // Auth, separate from the mTLS Fabric identity used to sign transactions below.
+  const transportCreds = appCredId && appCredSecret
+    ? grpc.credentials.combineChannelCredentials(
+        channelCreds,
+        grpc.credentials.createFromMetadataGenerator((_params, callback) => {
+          const metadata = new grpc.Metadata();
+          const basicAuth = Buffer.from(`${appCredId}:${appCredSecret}`).toString('base64');
+          metadata.set('Authorization', `Basic ${basicAuth}`);
+          callback(null, metadata);
+        })
+      )
+    : channelCreds;
+
+  client = new grpc.Client(blockchainConfig.fabric.peerEndpoint, transportCreds, {
     'grpc.ssl_target_name_override': blockchainConfig.fabric.peerHostAlias,
   });
 
