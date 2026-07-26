@@ -1,0 +1,98 @@
+# ============================================================
+# Render Infrastructure-as-Code configuration
+# ============================================================
+# This file defines the Render Web Service for the
+# SupplyChain+ backend. Render reads this file automatically
+# when you connect the repository (Render looks for render.yaml
+# at the repo root).
+#
+# Database provisioning:
+#   Create a Render PostgreSQL instance manually in the
+#   Render dashboard, then link it to this service.
+#   Render will inject DATABASE_URL automatically.
+#
+# After deploying, set the following in:
+#   Render Dashboard → SupplyChain API → Environment
+#
+#   JWT_SECRET          — generate a 64-byte hex secret
+#   JWT_REFRESH_SECRET  — generate a 64-byte hex secret
+#   CORS_ORIGIN         — your frontend Netlify URL
+#   API_BASE_URL        — this service's Render URL
+#   FRONTEND_URL         — your frontend Netlify URL (used inside
+#                          generated QR codes — see backend/.env.example)
+#
+# See DEPLOYMENT.md at the repo root for the full walkthrough,
+# and blockchain.md for what to add here if/when BLOCKCHAIN_ENABLED
+# is turned on.
+# ============================================================
+
+services:
+  - type: web
+    name: supplychain-api
+    runtime: node
+    region: frankfurt          # change to match your preferred region
+    plan: free                 # upgrade to starter/standard for production
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+
+    envVars:
+      # ── Application ─────────────────────────────────────
+      - key: NODE_ENV
+        value: production
+      - key: APP_NAME
+        value: SupplyChain+
+      - key: APP_VERSION
+        value: 1.0.0
+      - key: API_VERSION
+        value: v1
+      - key: LOG_LEVEL
+        value: info
+      - key: SWAGGER_ENABLED
+        value: "true"
+      - key: UPLOAD_DIRECTORY
+        value: uploads
+
+      # ── Database ─────────────────────────────────────────
+      # Render injects DATABASE_URL automatically when you
+      # link a PostgreSQL instance to this service.
+      # Do NOT set it manually here.
+
+      # ── Authentication ────────────────────────────────────
+      # Set JWT_SECRET and JWT_REFRESH_SECRET manually in the
+      # Render Dashboard — do not store secrets here.
+      - key: JWT_EXPIRES_IN
+        value: 1h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+
+      # ── CORS & Public URLs ────────────────────────────────
+      # Set these to your actual Netlify/Render URLs after the
+      # first deployment of each side.
+      - key: CORS_ORIGIN
+        value: http://localhost:5173      # UPDATE: set to frontend Netlify URL
+      - key: API_BASE_URL
+        value: http://localhost:3000      # UPDATE: set to this service's Render URL
+      - key: FRONTEND_URL
+        value: http://localhost:5173      # UPDATE: set to frontend Netlify URL — required for QR codes to be usable
+
+      # ── Blockchain (disabled by default — see blockchain.md) ──
+      - key: BLOCKCHAIN_ENABLED
+        value: "false"
+      - key: BLOCKCHAIN_AUTO_ANCHOR
+        value: "true"
+      - key: BLOCKCHAIN_ANCHOR_POLL_MS
+        value: "5000"
+      - key: BLOCKCHAIN_MAX_RETRIES
+        value: "5"
+      - key: FABRIC_CHANNEL_NAME
+        value: supplychainchannel
+      - key: FABRIC_CHAINCODE_NAME
+        value: supplychain-cc
+      # FABRIC_MSP_ID, FABRIC_PEER_ENDPOINT, FABRIC_PEER_HOST_ALIAS, and the
+      # FABRIC_*_PATH cert/key vars are intentionally omitted here — they're
+      # specific to whichever Fabric network you provision (see blockchain.md
+      # §3) and the cert/key files must be added via Render's Secret Files
+      # feature, not committed to this repo. Add them manually in the
+      # Render Dashboard once BLOCKCHAIN_ENABLED is set to "true".
