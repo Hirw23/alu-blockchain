@@ -48,9 +48,16 @@ export const connectFabric = async () => {
 
   const tlsRootCert = fs.readFileSync(blockchainConfig.fabric.tlsCertPath);
   const identityCert = fs.readFileSync(blockchainConfig.fabric.identityCertPath);
-  const identityKey = createPrivateKey(readFirstPrivateKey(blockchainConfig.fabric.identityKeyPath));
+  const identityKeyPem = readFirstPrivateKey(blockchainConfig.fabric.identityKeyPath);
+  const identityKey = createPrivateKey(identityKeyPem);
 
-  const channelCreds = grpc.credentials.createSsl(tlsRootCert);
+  // Gateways like Kaleido terminate the peer's gRPC endpoint with mutual TLS and
+  // reject any connection that doesn't present a client certificate at all (TLS
+  // alert 42, "bad certificate") -- distinct from the mTLS-optional local
+  // test-network. The same enrolled identity used to sign transactions below is
+  // also an acceptable client certificate here, since it was issued by the same
+  // Fabric CA the peer's own TLS cert chains back to.
+  const channelCreds = grpc.credentials.createSsl(tlsRootCert, identityKeyPem, identityCert);
   const { appCredId, appCredSecret } = blockchainConfig.fabric;
 
   // Gateways like Kaleido authenticate the gRPC connection itself with HTTP Basic
