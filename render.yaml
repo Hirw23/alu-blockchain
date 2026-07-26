@@ -71,11 +71,11 @@ services:
       # Set these to your actual Netlify/Render URLs after the
       # first deployment of each side.
       - key: CORS_ORIGIN
-        value: http://localhost:5173      # UPDATE: set to frontend Netlify URL
+        value: https://supplychainplus.netlify.app      # UPDATE: set to frontend Netlify URL
       - key: API_BASE_URL
-        value: http://localhost:3000      # UPDATE: set to this service's Render URL
+        value: https://supplychain-api-3vv8.onrender.com    # UPDATE: set to this service's Render URL
       - key: FRONTEND_URL
-        value: http://localhost:5173      # UPDATE: set to frontend Netlify URL — required for QR codes to be usable
+        value: https://supplychainplus.netlify.app    # UPDATE: set to frontend Netlify URL — required for QR codes to be usable
 
       # ── Blockchain (disabled by default — see blockchain.md) ──
       - key: BLOCKCHAIN_ENABLED
