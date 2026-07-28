@@ -6,14 +6,36 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import DataTable from '../../components/ui/DataTable';
 import Modal from '../../components/ui/Modal';
 import Spinner from '../../components/ui/Spinner';
+import Button from '../../components/ui/Button';
 
-function EventInspectorModal({ event, onClose }) {
+const RETRYABLE = ['PENDING', 'FAILED'];
+
+function RetryButton({ status, retrying, onRetry }) {
+  if (!RETRYABLE.includes(status)) return null;
+
+  return (
+    <Button
+      variant="secondary"
+      icon="refresh"
+      loading={retrying}
+      onClick={(e) => {
+        e.stopPropagation();
+        onRetry();
+      }}
+    >
+      Retry
+    </Button>
+  );
+}
+
+function EventInspectorModal({ event, onClose, onRetried }) {
   const [anchor, setAnchor] = useState(null);
   const [history, setHistory] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [retrying, setRetrying] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  function load() {
     setLoading(true);
     Promise.all([
       blockchainService.getAnchorStatus(event.id),
@@ -25,14 +47,26 @@ function EventInspectorModal({ event, onClose }) {
       })
       .catch((err) => setError(err.response?.data?.message || 'Could not load ledger details.'))
       .finally(() => setLoading(false));
-  }, [event.id]);
+  }
+  useEffect(load, [event.id]);
+
+  function retry() {
+    setRetrying(true);
+    setError('');
+    blockchainService
+      .recordEvent(event.id)
+      .then(() => {
+        load();
+        onRetried?.();
+      })
+      .catch((err) => setError(err.response?.data?.message || 'Retry failed.'))
+      .finally(() => setRetrying(false));
+  }
 
   return (
     <Modal open onClose={onClose} title={`Ledger Inspector — ${event.title}`} size="lg">
       {loading ? (
         <div className="flex justify-center py-lg"><Spinner className="text-primary" /></div>
-      ) : error ? (
-        <p className="font-body-sm text-body-sm text-error">{error}</p>
       ) : (
         <div className="space-y-lg">
           <dl className="grid grid-cols-2 gap-md">
@@ -63,10 +97,20 @@ function EventInspectorModal({ event, onClose }) {
               <dd className="font-body-sm text-body-sm text-on-surface">{anchor?.blockchainRetryCount ?? 0}</dd>
             </div>
           </dl>
-          {anchor?.blockchainLastError && (
+          {error && (
+            <div className="p-md bg-error-container text-on-error-container rounded-lg font-body-sm text-body-sm">
+              {error}
+            </div>
+          )}
+          {!error && anchor?.blockchainLastError && (
             <div className="p-md bg-error-container text-on-error-container rounded-lg font-body-sm text-body-sm">
               {anchor.blockchainLastError}
             </div>
+          )}
+          {RETRYABLE.includes(anchor?.blockchainStatus) && (
+            <Button variant="primary" icon="refresh" loading={retrying} onClick={retry}>
+              Retry Anchoring
+            </Button>
           )}
           <div>
             <h4 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide mb-sm">
@@ -91,29 +135,58 @@ function EventInspectorModal({ event, onClose }) {
 export default function BlockchainMonitoring() {
   const [networkStatus, setNetworkStatus] = useState(null);
   const [events, setEvents] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [identities, setIdentities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [inspecting, setInspecting] = useState(null);
+  const [retryingId, setRetryingId] = useState(null);
 
   function load() {
     setLoading(true);
     Promise.all([
       blockchainService.getNetworkStatus(),
       supplyChainService.getAll({ page: 1, limit: 20, sortBy: 'occurredAt', sortOrder: 'desc' }),
+      blockchainService.getRecentProducts(),
+      blockchainService.getRecentIdentities(),
     ])
-      .then(([statusRes, eventsRes]) => {
+      .then(([statusRes, eventsRes, productsRes, identitiesRes]) => {
         setNetworkStatus(statusRes.data?.data);
         setEvents(eventsRes.data?.data?.items || []);
+        setProducts(productsRes.data?.data || []);
+        setIdentities(identitiesRes.data?.data || []);
       })
       .finally(() => setLoading(false));
   }
   useEffect(load, []);
+
+  function retryProduct(product) {
+    setRetryingId(product.id);
+    blockchainService
+      .anchorProduct(product.id)
+      .catch(() => {})
+      .finally(() => {
+        setRetryingId(null);
+        load();
+      });
+  }
+
+  function retryIdentity(identity) {
+    setRetryingId(identity.id);
+    blockchainService
+      .anchorIdentity(identity.id)
+      .catch(() => {})
+      .finally(() => {
+        setRetryingId(null);
+        load();
+      });
+  }
 
   return (
     <div className="space-y-lg">
       <div>
         <h2 className="font-headline text-headline-lg text-on-surface">Blockchain Monitoring</h2>
         <p className="font-body-md text-body-md text-on-surface-variant">
-          Hyperledger Fabric gateway status and per-event anchoring inspection.
+          Hyperledger Fabric gateway status and per-record ledger anchoring inspection.
         </p>
       </div>
 
@@ -165,7 +238,64 @@ export default function BlockchainMonitoring() {
         />
       </Card>
 
-      {inspecting && <EventInspectorModal event={inspecting} onClose={() => setInspecting(null)} />}
+      <Card>
+        <CardHeader title="Recent Products" description="Product-registration anchors — a contract is issued on creation and re-issued on every edit." />
+        <DataTable
+          loading={loading}
+          data={products}
+          emptyTitle="No products found"
+          columns={[
+            { key: 'productName', header: 'Product' },
+            { key: 'businessName', header: 'Business' },
+            { key: 'blockchainStatus', header: 'Ledger', render: (row) => <StatusBadge status={row.blockchainStatus} /> },
+            { key: 'blockchainRetryCount', header: 'Retries' },
+            { key: 'blockchainTransactionId', header: 'Transaction ID', render: (row) => (
+              <span className="font-mono text-xs">{row.blockchainTransactionId ? `${row.blockchainTransactionId.slice(0, 12)}…` : '—'}</span>
+            ) },
+            {
+              key: 'actions',
+              header: '',
+              render: (row) => (
+                <RetryButton
+                  status={row.blockchainStatus}
+                  retrying={retryingId === row.id}
+                  onRetry={() => retryProduct(row)}
+                />
+              ),
+            },
+          ]}
+        />
+      </Card>
+
+      <Card>
+        <CardHeader title="Recent Digital Identities" description="QR verification-identity anchors, issued when a product's digital identity is generated." />
+        <DataTable
+          loading={loading}
+          data={identities}
+          emptyTitle="No digital identities found"
+          columns={[
+            { key: 'productName', header: 'Product' },
+            { key: 'qrStatus', header: 'QR Status', render: (row) => <StatusBadge status={row.qrStatus} /> },
+            { key: 'blockchainStatus', header: 'Ledger', render: (row) => <StatusBadge status={row.blockchainStatus} /> },
+            { key: 'blockchainRetryCount', header: 'Retries' },
+            {
+              key: 'actions',
+              header: '',
+              render: (row) => (
+                <RetryButton
+                  status={row.blockchainStatus}
+                  retrying={retryingId === row.id}
+                  onRetry={() => retryIdentity(row)}
+                />
+              ),
+            },
+          ]}
+        />
+      </Card>
+
+      {inspecting && (
+        <EventInspectorModal event={inspecting} onClose={() => setInspecting(null)} onRetried={load} />
+      )}
     </div>
   );
 }
