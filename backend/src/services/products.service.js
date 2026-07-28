@@ -162,6 +162,19 @@ export const productsService = {
     return updated;
   },
 
+  // The product-list/detail pages have always shown a `verificationStatus` badge
+  // (default PENDING) separate from the business-editable `status` lifecycle, but
+  // nothing ever wrote to it -- there was no admin action to approve or reject it,
+  // so it sat on PENDING forever. Mirrors businessesService.verifyBusiness.
+  async verifyProduct(id, userRole, verificationStatus) {
+    if (userRole !== 'PlatformAdmin') {
+      throw new ForbiddenError('Only platform administrators can verify products');
+    }
+
+    await this.getProduct(id);
+    return productsRepository.updateProduct(id, { verificationStatus });
+  },
+
   async getStatistics(id) {
     const product = await this.getProduct(id);
 

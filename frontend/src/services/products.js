@@ -9,6 +9,7 @@ export const productsService = {
   update: (id, data) => api.patch(`/products/${id}`, data),
   delete: (id) => api.delete(`/products/${id}`),
   updateStatus: (id, status) => api.patch(`/products/${id}/status`, { status }),
+  verify: (id, verificationStatus) => api.patch(`/products/${id}/verify`, { verificationStatus }),
   updateInventory: (id, data) => api.patch(`/products/${id}/inventory`, data),
   getStatistics: (id) => api.get(`/products/${id}/statistics`),
 

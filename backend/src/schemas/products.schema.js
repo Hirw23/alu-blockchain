@@ -119,6 +119,13 @@ export const updateProductStatusSchema = Joi.object({
 });
 
 /**
+ * Validation schema for platform-admin verification decisions.
+ */
+export const verifyProductSchema = Joi.object({
+  verificationStatus: Joi.string().valid('PENDING', 'VERIFIED', 'REJECTED').required(),
+});
+
+/**
  * Validation schema for product query searches.
  */
 export const searchProductSchema = Joi.object({
@@ -150,5 +157,6 @@ export default {
   productDocumentSchema,
   updateInventorySchema,
   updateProductStatusSchema,
+  verifyProductSchema,
   searchProductSchema,
 };

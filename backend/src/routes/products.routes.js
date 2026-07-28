@@ -13,6 +13,7 @@ import {
   validateProductDocument,
   validateUpdateInventory,
   validateUpdateProductStatus,
+  validateVerifyProduct,
   validateSearchProduct,
 } from '../validators/products.validator.js';
 
@@ -50,6 +51,12 @@ router.patch(
   checkPermission('product:archive'),
   validateUpdateProductStatus,
   productsController.updateStatus
+);
+router.patch(
+  '/:id/verify',
+  checkPermission('product:verify'),
+  validateVerifyProduct,
+  productsController.verify
 );
 router.patch(
   '/:id/inventory',

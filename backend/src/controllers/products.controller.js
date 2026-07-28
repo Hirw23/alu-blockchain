@@ -74,6 +74,15 @@ export const productsController = {
     res.status(200).json(successResponse('Product lifecycle status updated', { product }));
   }),
 
+  verify: asyncHandler(async (req, res) => {
+    const product = await productsService.verifyProduct(
+      req.params.id,
+      req.user.role,
+      req.body.verificationStatus
+    );
+    res.status(200).json(successResponse('Product verification complete', { product }));
+  }),
+
   updateInventory: asyncHandler(async (req, res) => {
     const product = await productsService.updateInventory(
       req.params.id,

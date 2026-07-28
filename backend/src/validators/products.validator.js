@@ -10,6 +10,7 @@ import {
   productDocumentSchema,
   updateInventorySchema,
   updateProductStatusSchema,
+  verifyProductSchema,
   searchProductSchema,
 } from '../schemas/products.schema.js';
 
@@ -23,6 +24,7 @@ export const validateImageMetadata = validate(imageMetadataSchema, 'body');
 export const validateProductDocument = validate(productDocumentSchema, 'body');
 export const validateUpdateInventory = validate(updateInventorySchema, 'body');
 export const validateUpdateProductStatus = validate(updateProductStatusSchema, 'body');
+export const validateVerifyProduct = validate(verifyProductSchema, 'body');
 export const validateSearchProduct = validate(searchProductSchema, 'query');
 
 export default {
@@ -36,5 +38,6 @@ export default {
   validateProductDocument,
   validateUpdateInventory,
   validateUpdateProductStatus,
+  validateVerifyProduct,
   validateSearchProduct,
 };

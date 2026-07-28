@@ -10,7 +10,7 @@ import { inputClassName } from '../../components/ui/FormField';
 import { useAuth } from '../../context/AuthContext';
 
 export default function ProductManagement() {
-  const { hasPermission } = useAuth();
+  const { hasPermission, isPlatformAdmin } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
@@ -28,11 +28,16 @@ export default function ProductManagement() {
 
   useEffect(() => {
     setLoading(true);
-    productsService
-      .getMe()
+    // PlatformAdmin owns no products of their own -- "my products" is always empty for
+    // that role, which silently hid every pending product from the one role that can
+    // actually approve them. Give admin the unscoped, platform-wide list instead.
+    const request = isPlatformAdmin
+      ? productsService.getAll({ limit: 100 })
+      : productsService.getMe();
+    request
       .then((res) => setProducts(res.data?.data?.items || []))
       .finally(() => setLoading(false));
-  }, []);
+  }, [isPlatformAdmin]);
 
   const categoryNameById = useMemo(() => {
     const map = {};
@@ -65,7 +70,7 @@ export default function ProductManagement() {
         <div>
           <h2 className="font-headline text-headline-lg text-on-surface">Products</h2>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Your registered product catalog.
+            {isPlatformAdmin ? 'Every registered product across the platform.' : 'Your registered product catalog.'}
           </p>
         </div>
         <div className="flex items-center gap-sm">

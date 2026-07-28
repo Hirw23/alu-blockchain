@@ -76,6 +76,15 @@ function OverviewTab({ product, onChanged }) {
     }
   }
 
+  async function handleVerify(verificationStatus) {
+    try {
+      await productsService.verify(product.id, verificationStatus);
+      onChanged();
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Could not update verification status.'));
+    }
+  }
+
   return (
     <div className="space-y-lg">
       <ErrorBanner>{error}</ErrorBanner>
@@ -154,7 +163,7 @@ function OverviewTab({ product, onChanged }) {
         )}
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-lg">
         <Card className="p-lg">
           <h4 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide mb-md">
             Inventory
@@ -195,6 +204,23 @@ function OverviewTab({ product, onChanged }) {
               </option>
             ))}
           </select>
+        </Card>
+        <Card className="p-lg">
+          <h4 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide mb-md">
+            Verification
+          </h4>
+          <StatusBadge status={product.verificationStatus} />
+          {hasPermission('product:verify') && product.verificationStatus === 'PENDING' && (
+            <div className="flex gap-sm mt-md">
+              <Button icon="check_circle" onClick={() => handleVerify('VERIFIED')}>Approve</Button>
+              <Button variant="danger" icon="cancel" onClick={() => handleVerify('REJECTED')}>Reject</Button>
+            </div>
+          )}
+          {!hasPermission('product:verify') && product.verificationStatus === 'PENDING' && (
+            <p className="font-label-sm text-label-sm text-on-surface-variant italic mt-md">
+              Awaiting platform administrator review.
+            </p>
+          )}
         </Card>
       </div>
     </div>
