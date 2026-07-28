@@ -7,6 +7,14 @@ import { blockchainConfig } from '../config/blockchain.js';
 let gateway;
 let client;
 let contract;
+let connecting;
+
+// grpc-js has no default deadline: if the peer is unreachable (dropped packets, not
+// even an active refusal), a call can hang forever instead of failing. That turns any
+// network hiccup into a permanently-stuck request -- the health check never resolves,
+// so the admin UI's "Promise.all" never settles either. Bounding every call type here
+// makes "Fabric is unreachable" surface as a fast ERROR instead of an infinite spinner.
+const withDeadline = (ms) => () => ({ deadline: Date.now() + ms });
 
 const readFirstPrivateKey = (keyPath) => {
   const stats = fs.statSync(keyPath);
@@ -44,6 +52,21 @@ export const connectFabric = async () => {
     return contract;
   }
 
+  // Without this guard, concurrent callers (the 5s anchor-worker tick racing a
+  // healthCheck request, for example) would each see `contract` as null and race to
+  // open their own grpc.Client/gateway -- piling up duplicate hung connections instead
+  // of sharing one in-flight attempt.
+  if (connecting) {
+    return connecting;
+  }
+
+  connecting = doConnectFabric().finally(() => {
+    connecting = null;
+  });
+  return connecting;
+};
+
+const doConnectFabric = async () => {
   assertFabricFiles();
 
   const tlsRootCert = fs.readFileSync(blockchainConfig.fabric.tlsCertPath);
@@ -85,6 +108,10 @@ export const connectFabric = async () => {
       credentials: identityCert,
     },
     signer: signers.newPrivateKeySigner(identityKey),
+    evaluateOptions: withDeadline(10_000),
+    endorseOptions: withDeadline(15_000),
+    submitOptions: withDeadline(10_000),
+    commitStatusOptions: withDeadline(30_000),
   });
 
   const network = gateway.getNetwork(blockchainConfig.fabric.channelName);
