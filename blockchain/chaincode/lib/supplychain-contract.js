@@ -23,13 +23,14 @@ const getTimestampIso = (ctx) => {
 
 const eventKey = (eventId) => `event:${eventId}`;
 const productKey = (productId) => `product:${productId}`;
+const identityKey = (identityId) => `identity:${identityId}`;
 
 class SupplyChainContract extends Contract {
   async Ping(ctx) {
     return JSON.stringify({
       ok: true,
       txId: ctx.stub.getTxID(),
-      chaincodeVersion: '1.0.0',
+      chaincodeVersion: '1.1.0',
       timestamp: getTimestampIso(ctx),
     });
   }
@@ -46,12 +47,100 @@ class SupplyChainContract extends Contract {
       businessId,
       productDataHash,
       registeredAt: getTimestampIso(ctx),
+      updatedAt: getTimestampIso(ctx),
       txId: ctx.stub.getTxID(),
       blockNumber: '',
     };
 
     await ctx.stub.putState(key, Buffer.from(stringify(record)));
     return JSON.stringify(record);
+  }
+
+  // Re-anchors a product after its off-chain record changes. Reuses the product's
+  // existing ledger key so Fabric's own key-history (GetProductHistory) captures every
+  // revision, instead of overwriting RegisterProduct's provenance with a second "register".
+  async UpdateProduct(ctx, productId, businessId, productDataHash) {
+    const key = productKey(productId);
+    const existingBuffer = await ctx.stub.getState(key);
+    if (!existingBuffer || existingBuffer.length === 0) {
+      throw new Error(`Product ${productId} does not exist`);
+    }
+
+    const existing = parseBuffer(existingBuffer);
+    const record = {
+      ...existing,
+      productId,
+      businessId,
+      productDataHash,
+      updatedAt: getTimestampIso(ctx),
+      txId: ctx.stub.getTxID(),
+      blockNumber: '',
+    };
+
+    await ctx.stub.putState(key, Buffer.from(stringify(record)));
+    return JSON.stringify(record);
+  }
+
+  async GetProductHistory(ctx, productId) {
+    const iterator = await ctx.stub.getHistoryForKey(productKey(productId));
+    const entries = [];
+
+    while (true) {
+      const item = await iterator.next();
+      if (item.value) {
+        entries.push({
+          txId: item.value.txId,
+          timestamp: item.value.timestamp
+            ? new Date(
+                Number(item.value.timestamp.seconds.low || item.value.timestamp.seconds) * 1000
+              ).toISOString()
+            : null,
+          isDelete: item.value.isDelete,
+          value: parseBuffer(item.value.value),
+        });
+      }
+
+      if (item.done) {
+        await iterator.close();
+        break;
+      }
+    }
+
+    return JSON.stringify(entries);
+  }
+
+  async RegisterIdentity(ctx, identityId, productId, businessId, identityDataHash) {
+    const key = identityKey(identityId);
+    const exists = await this.IdentityExists(ctx, identityId);
+    if (asBoolean(exists)) {
+      throw new Error(`Identity ${identityId} already exists`);
+    }
+
+    const record = {
+      identityId,
+      productId,
+      businessId,
+      identityDataHash,
+      registeredAt: getTimestampIso(ctx),
+      txId: ctx.stub.getTxID(),
+      blockNumber: '',
+    };
+
+    await ctx.stub.putState(key, Buffer.from(stringify(record)));
+    return JSON.stringify(record);
+  }
+
+  async GetIdentity(ctx, identityId) {
+    const record = await ctx.stub.getState(identityKey(identityId));
+    if (!record || record.length === 0) {
+      throw new Error(`Identity ${identityId} does not exist`);
+    }
+    return record.toString('utf8');
+  }
+
+  async IdentityExists(ctx, identityId) {
+    const data = await ctx.stub.getState(identityKey(identityId));
+    return String(!!data && data.length > 0);
   }
 
   async RecordEvent(
