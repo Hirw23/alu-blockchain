@@ -26,11 +26,17 @@ const startServer = () => {
     console.log('==========================================');
   });
 
+  // Start the retry poller unconditionally: it dials the Fabric gateway lazily
+  // per-tick (via getFabricContract), so it must run even if this initial connect
+  // attempt fails -- otherwise a single transient boot-time failure (cold peer,
+  // network blip) permanently disables the periodic sweep for stuck PENDING/FAILED
+  // records until the next deploy, with no other mechanism to pick them back up.
+  startAnchorWorker();
+
   blockchainService
     .connect()
     .then((status) => {
       console.log(`[Blockchain] ${status.status}: ${status.message}`);
-      startAnchorWorker();
       return processPendingAnchors();
     })
     .catch((error) => {

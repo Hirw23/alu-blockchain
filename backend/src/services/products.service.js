@@ -12,6 +12,16 @@ const triggerAnchorWorker = async () => {
   return processPendingAnchors();
 };
 
+// Marks a product dirty for re-anchoring after a mutation that changes anything in
+// buildProductAnchorPayload (blockchain.service.js) -- otherwise the on-chain hash goes
+// stale the moment the product is edited, with nothing flagging the drift. Reusing
+// blockchainStatus/retryCount (rather than a separate "dirty" flag) means the existing
+// anchor worker picks it back up with no extra plumbing.
+const reanchorData = () =>
+  blockchainConfig.enabled
+    ? { blockchainStatus: 'PENDING', blockchainRetryCount: 0, blockchainLastError: null }
+    : {};
+
 /**
  * Checks if a user has management permissions (Owner/Manager) for a business.
  */
@@ -102,7 +112,13 @@ export const productsService = {
       }
     }
 
-    return productsRepository.updateProduct(id, data);
+    const updated = await productsRepository.updateProduct(id, { ...data, ...reanchorData() });
+
+    triggerAnchorWorker().catch((error) => {
+      console.error(`Product re-anchor queue kick-off failed for ${id}:`, error.message);
+    });
+
+    return updated;
   },
 
   async deleteProduct(id, userId, userRole) {
@@ -124,13 +140,26 @@ export const productsService = {
     checkManagementAccess(product.business, userId, userRole);
 
     // PlatformAdmin or Owner can change to discontinued or archived
-    return productsRepository.updateProduct(id, { status });
+    const updated = await productsRepository.updateProduct(id, { status, ...reanchorData() });
+
+    triggerAnchorWorker().catch((error) => {
+      console.error(`Product re-anchor queue kick-off failed for ${id}:`, error.message);
+    });
+
+    return updated;
   },
 
   async updateInventory(id, userId, userRole, inventoryData) {
     const product = await this.getProduct(id);
     checkManagementAccess(product.business, userId, userRole);
-    return productsRepository.updateProduct(id, inventoryData);
+
+    const updated = await productsRepository.updateProduct(id, { ...inventoryData, ...reanchorData() });
+
+    triggerAnchorWorker().catch((error) => {
+      console.error(`Product re-anchor queue kick-off failed for ${id}:`, error.message);
+    });
+
+    return updated;
   },
 
   async getStatistics(id) {

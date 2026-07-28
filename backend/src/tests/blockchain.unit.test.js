@@ -8,10 +8,13 @@ import { jest } from '@jest/globals';
 const mockBlockchainRepo = {
   findEventById: jest.fn(),
   findProductById: jest.fn(),
+  findIdentityById: jest.fn(),
   updateEventBlockchainStatus: jest.fn(),
   updateProductBlockchainStatus: jest.fn(),
+  updateIdentityBlockchainStatus: jest.fn(),
   findEventByTransactionId: jest.fn(),
   findProductByTransactionId: jest.fn(),
+  findIdentityByTransactionId: jest.fn(),
 };
 
 const mockContract = {
@@ -88,6 +91,107 @@ describe('BlockchainService — Unit Tests', () => {
   });
 
    
+
+  describe('anchorProduct()', () => {
+    it('should call RegisterProduct for a product with no prior transaction id', async () => {
+      mockBlockchainRepo.updateProductBlockchainStatus.mockResolvedValue({});
+      mockContract.submitTransaction.mockResolvedValue(
+        Buffer.from(JSON.stringify({ txId: 'tx-new-1', timestamp: new Date().toISOString() }))
+      );
+
+      await blockchainService.anchorProduct({
+        id: 'prod-1',
+        businessId: 'biz-1',
+        blockchainTransactionId: null,
+      });
+
+      expect(mockContract.submitTransaction).toHaveBeenCalledWith(
+        'RegisterProduct',
+        'prod-1',
+        'biz-1',
+        expect.any(String)
+      );
+    });
+
+    it('should call UpdateProduct when the product was already anchored before', async () => {
+      mockBlockchainRepo.updateProductBlockchainStatus.mockResolvedValue({});
+      mockContract.submitTransaction.mockResolvedValue(
+        Buffer.from(JSON.stringify({ txId: 'tx-updated-1', timestamp: new Date().toISOString() }))
+      );
+
+      await blockchainService.anchorProduct({
+        id: 'prod-1',
+        businessId: 'biz-1',
+        blockchainTransactionId: 'tx-original-1',
+      });
+
+      expect(mockContract.submitTransaction).toHaveBeenCalledWith(
+        'UpdateProduct',
+        'prod-1',
+        'biz-1',
+        expect.any(String)
+      );
+    });
+  });
+
+  describe('anchorIdentity()', () => {
+    it('should submit a RegisterIdentity transaction and mark the identity CONFIRMED', async () => {
+      mockBlockchainRepo.updateIdentityBlockchainStatus.mockResolvedValue({});
+      mockContract.submitTransaction.mockResolvedValue(
+        Buffer.from(
+          JSON.stringify({ txId: 'tx-identity-1', registeredAt: new Date().toISOString() })
+        )
+      );
+
+      const result = await blockchainService.anchorIdentity({
+        id: 'ident-1',
+        productId: 'prod-1',
+        businessId: 'biz-1',
+        verificationToken: 'token-1',
+        qrVersion: 1,
+        qrStatus: 'GENERATED',
+        generatedBy: 'usr-1',
+        generatedAt: new Date().toISOString(),
+        expiresAt: null,
+      });
+
+      expect(mockContract.submitTransaction).toHaveBeenCalledWith(
+        'RegisterIdentity',
+        'ident-1',
+        'prod-1',
+        'biz-1',
+        expect.any(String)
+      );
+      expect(result.success).toBe(true);
+      expect(mockBlockchainRepo.updateIdentityBlockchainStatus).toHaveBeenLastCalledWith(
+        'ident-1',
+        expect.objectContaining({ blockchainStatus: 'CONFIRMED', blockchainTransactionId: 'tx-identity-1' })
+      );
+    });
+
+    it('should mark the identity FAILED and increment retry count on error', async () => {
+      mockBlockchainRepo.updateIdentityBlockchainStatus.mockResolvedValue({});
+      mockContract.submitTransaction.mockRejectedValue(new Error('peer unavailable'));
+
+      await expect(
+        blockchainService.anchorIdentity({
+          id: 'ident-2',
+          productId: 'prod-1',
+          businessId: 'biz-1',
+          verificationToken: 'token-2',
+          qrVersion: 1,
+          qrStatus: 'GENERATED',
+          generatedBy: 'usr-1',
+          generatedAt: new Date().toISOString(),
+        })
+      ).rejects.toThrow('peer unavailable');
+
+      expect(mockBlockchainRepo.updateIdentityBlockchainStatus).toHaveBeenLastCalledWith(
+        'ident-2',
+        expect.objectContaining({ blockchainStatus: 'FAILED', blockchainLastError: 'peer unavailable' })
+      );
+    });
+  });
 
   describe('getTransactionDetails()', () => {
     it('should return event-backed transaction details', async () => {

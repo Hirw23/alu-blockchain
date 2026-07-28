@@ -10,6 +10,18 @@ const prismaMock = {
     update: jest.fn(),
     count: jest.fn(),
   },
+  product: {
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
+  productIdentity: {
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
 };
 
 const mockContract = {
@@ -50,6 +62,7 @@ describe('Blockchain Integration API Endpoints', () => {
   let adminToken;
   let entrepreneurToken;
   const testEventId = 'e3098b6b-8d42-4521-888b-4456b3302344';
+  const testProductId = 'f3098b6b-8d42-4521-888b-4456b3302399';
 
   beforeAll(() => {
     adminToken = signAccessToken({
@@ -93,6 +106,14 @@ describe('Blockchain Integration API Endpoints', () => {
       eventType: { name: 'Harvested' },
       attachments: [],
       blockchainStatus: 'PENDING',
+    });
+
+    prismaMock.product.findUnique.mockResolvedValue({
+      id: testProductId,
+      businessId: 'biz-123',
+      productName: 'Wild Honey',
+      blockchainStatus: 'PENDING',
+      blockchainTransactionId: null,
     });
   });
 
@@ -151,6 +172,55 @@ describe('Blockchain Integration API Endpoints', () => {
 
       const res = await request(app)
         .post(`/api/v1/blockchain/events/${testEventId}`)
+        .set('Authorization', `Bearer ${entrepreneurToken}`)
+        .send();
+
+      expect(res.statusCode).toBe(403);
+    });
+  });
+
+  describe('POST /api/v1/blockchain/products/:productId', () => {
+    it('should anchor a never-before-registered product on the ledger', async () => {
+      prismaMock.product.update.mockResolvedValue({
+        id: testProductId,
+        blockchainStatus: 'CONFIRMED',
+        blockchainTransactionId: 'tx-mock-product-1',
+      });
+      mockContract.submitTransaction.mockResolvedValue(
+        Buffer.from(
+          JSON.stringify({
+            txId: 'tx-mock-product-1',
+            blockNumber: 3,
+            timestamp: new Date().toISOString(),
+          })
+        )
+      );
+
+      const res = await request(app)
+        .post(`/api/v1/blockchain/products/${testProductId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send();
+
+      expect(res.statusCode).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.blockchainStatus).toBe('CONFIRMED');
+      expect(mockContract.submitTransaction).toHaveBeenCalledWith(
+        'RegisterProduct',
+        testProductId,
+        'biz-123',
+        expect.any(String)
+      );
+    });
+
+    it('should restrict manual product anchoring to authorized users only', async () => {
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'usr-ent-123',
+        status: 'ACTIVE',
+        role: { name: 'Entrepreneur', permissions: [] },
+      });
+
+      const res = await request(app)
+        .post(`/api/v1/blockchain/products/${testProductId}`)
         .set('Authorization', `Bearer ${entrepreneurToken}`)
         .send();
 

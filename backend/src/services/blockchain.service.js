@@ -42,6 +42,18 @@ const buildProductAnchorPayload = (product) => ({
   createdAt: product.createdAt,
 });
 
+const buildIdentityAnchorPayload = (identity) => ({
+  identityId: identity.id,
+  productId: identity.productId,
+  businessId: identity.businessId,
+  verificationToken: identity.verificationToken,
+  qrVersion: identity.qrVersion,
+  qrStatus: identity.qrStatus,
+  generatedBy: identity.generatedBy,
+  generatedAt: identity.generatedAt,
+  expiresAt: identity.expiresAt,
+});
+
 const buildEventAnchorPayload = (event) => ({
   eventId: event.id,
   productId: event.productId,
@@ -68,6 +80,20 @@ const buildDisabledHealth = (message = 'Fabric integration is disabled') => ({
   channel: blockchainConfig.fabric.channelName,
   chaincodeVersion: 'unknown',
   connectionStatus: 'DISABLED',
+  chaincodeName: blockchainConfig.fabric.chaincodeName,
+  message,
+});
+
+// Distinct from buildDisabledHealth: blockchain IS enabled and a connection was
+// attempted, it just failed (network, TLS, or chaincode-lifecycle issue). Reporting
+// this as DISABLED would be misleading -- it looks identical in the UI to
+// BLOCKCHAIN_ENABLED=false even though the integration is actively trying.
+const buildErrorHealth = (message) => ({
+  networkStatus: 'DOWN',
+  peerStatus: 'OFFLINE',
+  channel: blockchainConfig.fabric.channelName,
+  chaincodeVersion: 'unknown',
+  connectionStatus: 'ERROR',
   chaincodeName: blockchainConfig.fabric.chaincodeName,
   message,
 });
@@ -108,8 +134,13 @@ export const blockchainService = {
     try {
       const contract = await getFabricContract();
       const productDataHash = createCanonicalHash(buildProductAnchorPayload(product));
+      // A product already carrying a transaction id has been through RegisterProduct
+      // before (e.g. re-anchored after an edit) -- that ledger key already exists, so a
+      // second RegisterProduct would be rejected by the chaincode. UpdateProduct reuses
+      // the same key, letting Fabric's own key-history capture every revision.
+      const chaincodeFn = product.blockchainTransactionId ? 'UpdateProduct' : 'RegisterProduct';
       const payload = await contract.submitTransaction(
-        'RegisterProduct',
+        chaincodeFn,
         product.id,
         product.businessId,
         productDataHash
@@ -205,6 +236,68 @@ export const blockchainService = {
     }
   },
 
+  async anchorIdentity(identityOrId) {
+    const identity =
+      typeof identityOrId === 'string'
+        ? await blockchainRepository.findIdentityById(identityOrId)
+        : identityOrId;
+
+    if (!identity) {
+      throw new NotFoundError('Digital identity not found');
+    }
+
+    if (!blockchainConfig.enabled) {
+      throw new BadRequestError('Fabric integration is disabled');
+    }
+
+    await blockchainRepository.updateIdentityBlockchainStatus(identity.id, {
+      blockchainStatus: 'PROCESSING',
+      blockchainLastError: null,
+    });
+
+    try {
+      const contract = await getFabricContract();
+      const identityDataHash = createCanonicalHash(buildIdentityAnchorPayload(identity));
+      const payload = await contract.submitTransaction(
+        'RegisterIdentity',
+        identity.id,
+        identity.productId,
+        identity.businessId,
+        identityDataHash
+      );
+      const result = decodeJson(payload);
+
+      await blockchainRepository.updateIdentityBlockchainStatus(identity.id, {
+        blockchainStatus: 'CONFIRMED',
+        blockchainTransactionId: result?.txId || null,
+        blockchainRecordedAt: result?.registeredAt ? new Date(result.registeredAt) : new Date(),
+        blockchainBlockNumber: parseBlockNumber(result?.blockNumber),
+        blockchainRetryCount: 0,
+        blockchainLastError: null,
+      });
+
+      return {
+        success: true,
+        transactionId: result?.txId || null,
+        blockNumber: parseBlockNumber(result?.blockNumber),
+        blockchainStatus: 'CONFIRMED',
+        dataHash: identityDataHash,
+      };
+    } catch (error) {
+      await blockchainRepository.updateIdentityBlockchainStatus(identity.id, {
+        blockchainStatus: 'FAILED',
+        blockchainRetryCount: { increment: 1 },
+        blockchainLastError: error.message,
+      });
+      throw error;
+    }
+  },
+
+  async getOnChainIdentity(identityId) {
+    const contract = await getFabricContract();
+    return decodeJson(await contract.evaluateTransaction('GetIdentity', identityId));
+  },
+
   async getTransactionStatus(transactionId) {
     const event = await blockchainRepository.findEventByTransactionId(transactionId);
     if (event) {
@@ -235,6 +328,22 @@ export const blockchainService = {
         channel: blockchainConfig.fabric.channelName,
         chaincode: blockchainConfig.fabric.chaincodeName,
         payload: onChainProduct,
+      };
+    }
+
+    const identity = await blockchainRepository.findIdentityByTransactionId(transactionId);
+    if (identity) {
+      const onChainIdentity = await this.getOnChainIdentity(identity.id);
+      return {
+        transactionId,
+        recordType: 'PRODUCT_IDENTITY',
+        key: identity.id,
+        status: identity.blockchainStatus,
+        blockNumber: identity.blockchainBlockNumber,
+        timestamp: identity.blockchainRecordedAt,
+        channel: blockchainConfig.fabric.channelName,
+        chaincode: blockchainConfig.fabric.chaincodeName,
+        payload: onChainIdentity,
       };
     }
 
@@ -282,7 +391,7 @@ export const blockchainService = {
         gateway: result,
       };
     } catch (error) {
-      return buildDisabledHealth(error.message);
+      return buildErrorHealth(error.message);
     }
   },
 

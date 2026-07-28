@@ -3,6 +3,8 @@ import blockchainController from '../controllers/blockchain.controller.js';
 import { authenticate, checkPermission } from '../middleware/auth.js';
 import {
   validateRecordEventParams,
+  validateProductParams,
+  validateIdentityParams,
   validateTransactionLookupParams,
 } from '../validators/blockchain.validator.js';
 
@@ -53,6 +55,52 @@ router.get(
   checkPermission('blockchain:view'),
   validateTransactionLookupParams,
   blockchainController.getTransactionDetails
+);
+
+router.get(
+  '/products',
+  authenticate,
+  checkPermission('blockchain:view'),
+  blockchainController.listRecentProducts
+);
+
+router.post(
+  '/products/:productId',
+  authenticate,
+  checkPermission('blockchain:record'),
+  validateProductParams,
+  blockchainController.anchorProduct
+);
+
+router.get(
+  '/products/:productId',
+  authenticate,
+  checkPermission('blockchain:view'),
+  validateProductParams,
+  blockchainController.getProductBlockchainInfo
+);
+
+router.get(
+  '/identities',
+  authenticate,
+  checkPermission('blockchain:view'),
+  blockchainController.listRecentIdentities
+);
+
+router.post(
+  '/identities/:identityId',
+  authenticate,
+  checkPermission('blockchain:record'),
+  validateIdentityParams,
+  blockchainController.anchorIdentity
+);
+
+router.get(
+  '/identities/:identityId',
+  authenticate,
+  checkPermission('blockchain:view'),
+  validateIdentityParams,
+  blockchainController.getIdentityBlockchainInfo
 );
 
 export default router;

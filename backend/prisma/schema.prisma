@@ -359,8 +359,12 @@ model ProductIdentity {
   revokedAt              DateTime?
   lastScanAt             DateTime?
   totalScans             Int                 @default(0)
-  blockchainStatus       String              @default("PENDING")
+  blockchainStatus       String              @default("PENDING") // PENDING, PROCESSING, CONFIRMED, FAILED
   blockchainTransactionId String?
+  blockchainRecordedAt   DateTime?
+  blockchainBlockNumber  Int?
+  blockchainRetryCount   Int                 @default(0)
+  blockchainLastError    String?
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
   qrCodeAssets           QRCodeAsset[]

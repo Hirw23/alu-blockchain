@@ -6,7 +6,17 @@ import QRCode from 'qrcode';
 import qrRepository from '../repositories/qr.repository.js';
 import productsService from './products.service.js';
 import supplychainService from './supplychain.service.js';
+import { blockchainConfig } from '../config/blockchain.js';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../utils/errors.js';
+
+const triggerAnchorWorker = async () => {
+  if (!blockchainConfig.enabled || !blockchainConfig.autoAnchor) {
+    return;
+  }
+
+  const { processPendingAnchors } = await import('../blockchain/anchorWorker.js');
+  return processPendingAnchors();
+};
 
 const hashIp = (ip) =>
   crypto
@@ -47,7 +57,13 @@ export const qrService = {
     }
 
     const token = uuidv4();
-    return qrRepository.createIdentity(productId, business.id, userId, token, data.expiresAt);
+    const identity = await qrRepository.createIdentity(productId, business.id, userId, token, data.expiresAt);
+
+    triggerAnchorWorker().catch((error) => {
+      console.error(`Identity anchor queue kick-off failed for ${identity.id}:`, error.message);
+    });
+
+    return identity;
   },
 
   async updateStatus(identityId, userId, userRole, status) {

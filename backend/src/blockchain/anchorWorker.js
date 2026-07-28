@@ -27,6 +27,17 @@ const processEvents = async () => {
   }
 };
 
+const processIdentities = async () => {
+  const identities = await blockchainRepository.findPendingIdentities();
+  for (const identity of identities) {
+    try {
+      await blockchainService.anchorIdentity(identity);
+    } catch (error) {
+      console.error(`Identity anchoring failed for ${identity.id}:`, error.message);
+    }
+  }
+};
+
 export const processPendingAnchors = async () => {
   if (isRunning || !blockchainConfig.enabled) {
     return;
@@ -36,6 +47,7 @@ export const processPendingAnchors = async () => {
   try {
     await processProducts();
     await processEvents();
+    await processIdentities();
   } finally {
     isRunning = false;
   }
